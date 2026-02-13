@@ -83,8 +83,6 @@ body.light{--bg:#f5f5ff;--bg2:#eeeef8;--bg3:#e0e0ee;--text:#1a1a2e;--text2:#6666
 .item-badge.red{background:rgba(214,48,49,.15);color:var(--red)}
 .item-badge.frozen{background:rgba(116,185,255,.15);color:#74b9ff}
 
-.loc-badge{font-size:10px;background:var(--bg3);padding:2px 6px;border-radius:6px;margin-left:4px}
-
 .fab{position:fixed;bottom:88px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;font-size:28px;cursor:pointer;box-shadow:0 4px 20px rgba(108,92,231,.4);z-index:99;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
 .fab:active{transform:scale(.85) rotate(90deg)}
 
@@ -961,7 +959,7 @@ function saveItem(){
 }
 
 // Photo with AI recognition
-function capturePhoto(){document.getElementById('photoInput').click()}
+function capturePhoto(){document.getElementById('photoInput').value='';document.getElementById('photoInput').click()}
 function handlePhoto(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
@@ -1230,7 +1228,9 @@ function showNotifSummary(){
 // ===== EXPORT/IMPORT =====
 function exportBackup(){
   const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='validade_backup.json';a.click();
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='validade_backup.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
   toast('📤 Backup exportado!');
 }
 
