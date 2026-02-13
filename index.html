@@ -397,14 +397,19 @@ async function callGemini(parts,maxTokens=1024){
 
 function extractJSON(text){
   if(!text)return null;
+  // Strip markdown code blocks first
+  let cleaned=text.replace(/```(?:json)?\s*/gi,'').replace(/```/g,'').trim();
   // Try to find JSON in the response
-  const m=text.match(/\[[\s\S]*\]/)||text.match(/\{[\s\S]*\}/);
+  const m=cleaned.match(/\[[\s\S]*\]/)||cleaned.match(/\{[\s\S]*\}/);
   if(!m)return null;
   try{return JSON.parse(m[0])}catch(e){
-    // Try fixing common issues
+    // Try fixing common issues (trailing commas)
     try{return JSON.parse(m[0].replace(/,\s*([}\]])/g,'$1'))}catch(e2){return null}
   }
 }
+
+// HTML escape to prevent XSS
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 
 // ===== DATA =====
 const CATEGORIES = [
@@ -501,7 +506,7 @@ const BADGES = [
 let state = loadState();
 
 function loadState(){
-  try{const s=JSON.parse(localStorage.getItem('validade_state'));return s||defaultState()}catch(e){return defaultState()}
+  try{const s=JSON.parse(localStorage.getItem('validade_state'));if(!s)return defaultState();const ds=defaultState();return{...ds,...s,stats:{...ds.stats,...(s.stats||{})},settings:{...ds.settings,...(s.settings||{})}}}catch(e){return defaultState()}
 }
 function defaultState(){
   return {items:[],stats:{streak:0,lastNoWasteDate:null,recipesUsed:0,frozenManaged:0,totalTracked:0,moneySaved:0,moneyWasted:0,wasteLog:[]},settings:{darkMode:true,notifications:false,morningSummary:false},shareCode:null};
@@ -674,7 +679,7 @@ async function processNaturalLanguage(){
       html+=`<div class="ai-photo-result" style="margin-bottom:8px">
         <h4>${cat?cat.emoji:''} ${item.name} <span class="ai-badge">IA</span></h4>
         <p>📦 ${item.quantity||1} ${item.unit||'un'} · 📍 ${locName(item.location||'geladeira')} · 📅 ${item.expiryDate||'?'}</p>
-        <button class="ai-apply-btn" onclick="addFromNL(${i})">➕ Adicionar</button>
+        <button class="ai-apply-btn" onclick="addFromNL(${i},this)">➕ Adicionar</button>
       </div>`;
     });
     html+=`<button class="btn btn-primary" style="margin-top:8px;font-size:13px;padding:10px" onclick="addAllFromNL()">✅ Adicionar Todos (${parsed.length})</button>`;
@@ -685,7 +690,7 @@ async function processNaturalLanguage(){
   }
 }
 
-function addFromNL(index){
+function addFromNL(index,btn){
   const items=window._nlItems;if(!items||!items[index])return;
   const item=items[index];
   const loc=item.location||'geladeira';
@@ -698,10 +703,7 @@ function addFromNL(index){
   state.stats.totalTracked++;
   save();renderHome();renderItems();
   toast('✅ '+item.name+' adicionado!');
-  // Remove button
-  event.target.textContent='✔️ Adicionado';
-  event.target.disabled=true;
-  event.target.style.opacity='.5';
+  if(btn){btn.textContent='✔️ Adicionado';btn.disabled=true;btn.style.opacity='.5';}
 }
 
 function addAllFromNL(){
@@ -745,8 +747,8 @@ function renderHome(){
 
   let alerts='';
   if(expired.length) alerts+=`<div class="alert-card red"><span class="alert-icon">⚠️</span><div class="alert-info"><h3>${expired.length} item(ns) vencido(s)!</h3><p>Verifique e descarte se necessário</p></div><span class="alert-count">${expired.length}</span></div>`;
-  if(expToday.length) alerts+=`<div class="alert-card orange"><span class="alert-icon">⏰</span><div class="alert-info"><h3>${expToday.length} item(ns) vencem hoje!</h3><p>${expToday.map(i=>i.name).join(', ')}</p></div><span class="alert-count">${expToday.length}</span></div>`;
-  if(exp3.length) alerts+=`<div class="alert-card yellow"><span class="alert-icon">📅</span><div class="alert-info"><h3>${exp3.length} item(ns) nos próximos 3 dias</h3><p>${exp3.map(i=>i.name).join(', ')}</p></div><span class="alert-count">${exp3.length}</span></div>`;
+  if(expToday.length) alerts+=`<div class="alert-card orange"><span class="alert-icon">⏰</span><div class="alert-info"><h3>${expToday.length} item(ns) vencem hoje!</h3><p>${expToday.map(i=>esc(i.name)).join(', ')}</p></div><span class="alert-count">${expToday.length}</span></div>`;
+  if(exp3.length) alerts+=`<div class="alert-card yellow"><span class="alert-icon">📅</span><div class="alert-info"><h3>${exp3.length} item(ns) nos próximos 3 dias</h3><p>${exp3.map(i=>esc(i.name)).join(', ')}</p></div><span class="alert-count">${exp3.length}</span></div>`;
   document.getElementById('alerts-section').innerHTML=alerts;
 
   // Seasonal tip
@@ -839,7 +841,7 @@ function renderItems(){
       <div class="item-bg right">🗑️ Deletar</div>
       <div class="item-content">
         <span class="item-emoji">${getCatEmoji(item.category)}</span>
-        <div class="item-info"><h4>${item.name}</h4><p>${item.quantity}${item.unit} · ${locName(item.location)}</p></div>
+        <div class="item-info"><h4>${esc(item.name)}</h4><p>${item.quantity}${esc(item.unit)} · ${locName(item.location)}</p></div>
         <span class="item-badge ${color}">${d}</span>
       </div>
     </div>`;
@@ -985,7 +987,7 @@ function deleteItem(id){
 function wasteItem(id){
   const item=state.items.find(i=>i.id===id);if(!item)return;
   document.getElementById('wasteItemId').value=id;
-  document.getElementById('wasteItemName').textContent=item.name;
+  document.getElementById('wasteItemName').textContent=item.name;/*safe:textContent*/
   document.getElementById('wastePrice').value=item.price||'';
   openModal('wasteModal');
 }
@@ -1018,10 +1020,10 @@ function showDetail(id){
   const days=daysUntil(item.expiryDate);
   const color=item.status==='frozen'?'frozen':getStatusColor(days);
   const statusText=item.status==='frozen'?'❄️ Congelado':getStatusText(days);
-  let html=`<div style="text-align:center;margin-bottom:16px"><span style="font-size:48px">${getCatEmoji(item.category)}</span><h2 style="margin-top:8px">${item.name}</h2><span class="item-badge ${color}" style="display:inline-block;margin-top:8px;font-size:14px;padding:6px 16px">${statusText}</span></div>`;
-  html+=`<div class="card"><p>📁 ${getCatName(item.category)}</p><p>📍 ${locName(item.location)}</p><p>📦 ${item.quantity} ${item.unit}</p><p>📅 Validade: ${item.expiryDate}</p>`;
+  let html=`<div style="text-align:center;margin-bottom:16px"><span style="font-size:48px">${getCatEmoji(item.category)}</span><h2 style="margin-top:8px">${esc(item.name)}</h2><span class="item-badge ${color}" style="display:inline-block;margin-top:8px;font-size:14px;padding:6px 16px">${statusText}</span></div>`;
+  html+=`<div class="card"><p>📁 ${getCatName(item.category)}</p><p>📍 ${locName(item.location)}</p><p>📦 ${item.quantity} ${esc(item.unit)}</p><p>📅 Validade: ${item.expiryDate}</p>`;
   if(item.price)html+=`<p>💰 R$ ${item.price.toFixed(2)}</p>`;
-  if(item.notes)html+=`<p>📝 ${item.notes}</p>`;
+  if(item.notes)html+=`<p>📝 ${esc(item.notes)}</p>`;
   if(item.frozenDate)html+=`<p>❄️ Congelado em: ${item.frozenDate}</p>`;
   html+=`</div>`;
   if(item.photo&&item.photo!=='null')html+=`<img src="${item.photo}" style="width:100%;border-radius:12px;margin-bottom:12px">`;
@@ -1133,7 +1135,7 @@ function drawBarChart(){
     const h=(months[k]/maxVal)*140;const x=gap+(barW+gap)*i;const y=170-h;
     const grad=ctx.createLinearGradient(x,y,x,170);
     grad.addColorStop(0,'#d63031');grad.addColorStop(1,'#e84393');
-    ctx.fillStyle=grad;ctx.beginPath();ctx.roundRect(x,y,barW,h,4);ctx.fill();
+    ctx.fillStyle=grad;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,barW,h,4);else{ctx.rect(x,y,barW,h);}ctx.fill();
     ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--text2').trim();ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText(k.slice(5),x+barW/2,185);
     ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--text').trim();ctx.font='10px sans-serif';ctx.fillText('R$'+months[k].toFixed(0),x+barW/2,y-4);
   });
@@ -1202,7 +1204,7 @@ function importBackup(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=function(ev){
-    try{state=JSON.parse(ev.target.result);save();renderHome();toast('📥 Backup restaurado!')}
+    try{const imported=JSON.parse(ev.target.result);const ds=defaultState();state={...ds,...imported,stats:{...ds.stats,...(imported.stats||{})},settings:{...ds.settings,...(imported.settings||{})}};save();renderHome();toast('📥 Backup restaurado!')}
     catch(err){toast('❌ Arquivo inválido!')}
   };
   reader.readAsText(file);
