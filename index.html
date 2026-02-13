@@ -928,7 +928,7 @@ function saveItem(){
     unit:document.getElementById('fUnit').value,
     expiryDate:document.getElementById('fExpiry').value,
     addedDate:today(),
-    photo:(photoSrc&&!photoSrc.endsWith('/'))?photoSrc:null,
+    photo:(photoSrc&&photoSrc.startsWith('data:'))?photoSrc:null,
     price:parseFloat(document.getElementById('fPrice').value)||0,
     status:loc==='freezer'?'frozen':'active',
     frozenDate:loc==='freezer'?today():null,

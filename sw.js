@@ -1,5 +1,5 @@
-const CACHE_NAME = 'validade-v1';
-const ASSETS = ['/index.html', '/manifest.json'];
+const CACHE_NAME = 'validade-v2';
+const ASSETS = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
@@ -12,13 +12,19 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(resp => {
-    if (resp.status === 200 && e.request.method === 'GET') {
-      const clone = resp.clone();
-      caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
-    }
-    return resp;
-  }).catch(() => caches.match('/index.html'))));
+  // Only cache same-origin GET requests (skip Gemini API calls)
+  if (e.request.method !== 'GET' || e.request.url.includes('generativelanguage.googleapis.com')) {
+    return;
+  }
+  e.respondWith(
+    caches.match(e.request).then(r => r || fetch(e.request).then(resp => {
+      if (resp.status === 200) {
+        const clone = resp.clone();
+        caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+      }
+      return resp;
+    }).catch(() => caches.match('./index.html'))
+  ));
 });
 
 // Notification scheduling
@@ -29,7 +35,7 @@ self.addEventListener('message', e => {
     const expiring = items.filter(i => i.status === 'active' && i.expiryDate === today);
     if (expiring.length > 0) {
       self.registration.showNotification('⚠️ Validade', {
-        body: `${expiring.length} item(ns) vencem hoje!`,
+        body: `${expiring.length} item(ns) vencem hoje: ${expiring.map(i=>i.name).join(', ')}`,
         icon: '🥦',
         badge: '⚠️',
         tag: 'expiry-today'

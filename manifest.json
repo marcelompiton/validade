@@ -2,7 +2,7 @@
   "name": "Validade - Rastreador de Validade",
   "short_name": "Validade",
   "description": "Rastreie datas de validade dos seus alimentos e evite desperdício",
-  "start_url": "/index.html",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#0f0f1a",
   "theme_color": "#6c5ce7",
