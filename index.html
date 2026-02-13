@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0f0f1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<title>Validade</title>
+<style>
+:root{--bg:#0f0f1a;--bg2:#1a1a2e;--bg3:#252540;--text:#e8e8f0;--text2:#9999b0;--accent:#6c5ce7;--accent2:#a855f7;--green:#00b894;--yellow:#fdcb6e;--orange:#e17055;--red:#d63031;--card:#1e1e35;--radius:16px;--shadow:0 4px 20px rgba(0,0,0,.3);--transition:.3s cubic-bezier(.4,0,.2,1)}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;padding-bottom:80px;transition:background var(--transition),color var(--transition)}
+body.light{--bg:#f5f5ff;--bg2:#eeeef8;--bg3:#e0e0ee;--text:#1a1a2e;--text2:#666680;--card:#fff;--shadow:0 4px 20px rgba(0,0,0,.08)}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--accent);border-radius:4px}
+
+.header{padding:16px 20px 8px;display:flex;justify-content:space-between;align-items:center}
+.header h1{font-size:24px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800}
+.header-actions{display:flex;gap:8px}
+.header-btn{background:var(--bg2);border:none;color:var(--text);width:40px;height:40px;border-radius:12px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
+.header-btn:active{transform:scale(.9)}
+
+.page{display:none;padding:0 16px 16px;animation:fadeIn .3s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes sparkle{0%,100%{opacity:1}50%{opacity:.5}}
+
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);backdrop-filter:blur(20px);display:flex;justify-content:space-around;padding:8px 0 max(8px,env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.05);z-index:100}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 16px;border:none;background:none;color:var(--text2);font-size:10px;cursor:pointer;transition:var(--transition);border-radius:12px}
+.nav-item .icon{font-size:22px;transition:var(--transition)}
+.nav-item.active{color:var(--accent)}
+.nav-item.active .icon{transform:scale(1.15)}
+.nav-item:active{transform:scale(.9)}
+
+.card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);transition:var(--transition);position:relative;overflow:hidden}
+.card:active{transform:scale(.98)}
+.section-title{font-size:14px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin:20px 0 12px;display:flex;align-items:center;gap:8px}
+
+.alert-card{padding:16px;border-radius:var(--radius);margin-bottom:12px;display:flex;align-items:center;gap:12px;animation:slideUp .4s ease}
+.alert-card.red{background:linear-gradient(135deg,rgba(214,48,49,.2),rgba(214,48,49,.05));border-left:4px solid var(--red)}
+.alert-card.orange{background:linear-gradient(135deg,rgba(225,112,85,.2),rgba(225,112,85,.05));border-left:4px solid var(--orange)}
+.alert-card.yellow{background:linear-gradient(135deg,rgba(253,203,110,.15),rgba(253,203,110,.05));border-left:4px solid var(--yellow)}
+.alert-card .alert-icon{font-size:32px}
+.alert-card .alert-info{flex:1}
+.alert-card .alert-info h3{font-size:15px;margin-bottom:2px}
+.alert-card .alert-info p{font-size:12px;color:var(--text2)}
+.alert-count{background:var(--red);color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+
+.streak-card{background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:16px;position:relative;overflow:hidden}
+.streak-card::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(255,255,255,.1) 0%,transparent 60%);animation:pulse 3s infinite}
+.streak-num{font-size:48px;font-weight:900}
+.streak-label{font-size:13px;opacity:.9;margin-top:4px}
+.streak-fire{font-size:28px}
+
+.recipe-card{background:linear-gradient(135deg,rgba(108,92,231,.15),rgba(168,85,247,.1));border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid rgba(108,92,231,.2)}
+.recipe-card h3{font-size:16px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.recipe-card p{font-size:13px;color:var(--text2);line-height:1.5}
+.recipe-card .recipe-steps{margin-top:8px;font-size:12px;color:var(--text);line-height:1.6;white-space:pre-line}
+.recipe-meta{display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--text2)}
+.recipe-meta span{display:flex;align-items:center;gap:4px}
+
+.item-row{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border-radius:var(--radius);margin-bottom:8px;position:relative;overflow:hidden;transition:var(--transition);touch-action:pan-y}
+.item-row.swiping{transition:none}
+.item-row .item-bg{position:absolute;top:0;bottom:0;width:100%;display:flex;align-items:center;padding:0 20px;font-size:14px;font-weight:600;color:#fff;z-index:0}
+.item-bg.left{left:-100%;background:var(--green);justify-content:flex-end}
+.item-bg.right{right:-100%;background:var(--red);justify-content:flex-start}
+.item-content{display:flex;align-items:center;gap:12px;width:100%;position:relative;z-index:1;background:var(--card);transition:var(--transition)}
+.item-emoji{font-size:28px;width:40px;text-align:center;flex-shrink:0}
+.item-info{flex:1;min-width:0}
+.item-info h4{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-info p{font-size:11px;color:var(--text2);margin-top:2px}
+.item-badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;flex-shrink:0}
+.item-badge.green{background:rgba(0,184,148,.15);color:var(--green)}
+.item-badge.yellow{background:rgba(253,203,110,.15);color:var(--yellow)}
+.item-badge.orange{background:rgba(225,112,85,.15);color:var(--orange)}
+.item-badge.red{background:rgba(214,48,49,.15);color:var(--red)}
+.item-badge.frozen{background:rgba(116,185,255,.15);color:#74b9ff}
+
+.loc-badge{font-size:10px;background:var(--bg3);padding:2px 6px;border-radius:6px;margin-left:4px}
+
+.fab{position:fixed;bottom:88px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;font-size:28px;cursor:pointer;box-shadow:0 4px 20px rgba(108,92,231,.4);z-index:99;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
+.fab:active{transform:scale(.85) rotate(90deg)}
+
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal{background:var(--bg2);border-radius:24px 24px 0 0;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;padding:24px 20px max(20px,env(safe-area-inset-bottom));animation:slideUp .3s ease}
+.modal-handle{width:40px;height:4px;background:var(--bg3);border-radius:4px;margin:0 auto 20px}
+.modal h2{font-size:20px;margin-bottom:20px;text-align:center}
+
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.form-input{width:100%;padding:14px 16px;background:var(--bg3);border:2px solid transparent;border-radius:12px;color:var(--text);font-size:15px;outline:none;transition:var(--transition)}
+.form-input:focus{border-color:var(--accent)}
+.form-input::placeholder{color:var(--text2)}
+select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239999b0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center}
+option{background:var(--bg2);color:var(--text)}
+
+.quick-add{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.quick-chip{padding:8px 14px;background:var(--bg3);border:none;color:var(--text);border-radius:20px;font-size:13px;cursor:pointer;transition:var(--transition)}
+.quick-chip:active{transform:scale(.9);background:var(--accent)}
+
+.btn{padding:14px 24px;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:var(--transition);width:100%}
+.btn:active{transform:scale(.96)}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.btn-danger{background:linear-gradient(135deg,var(--red),#e84393);color:#fff}
+.btn-secondary{background:var(--bg3);color:var(--text)}
+.btn-row{display:flex;gap:10px;margin-top:16px}
+.btn-row .btn{flex:1}
+
+.filter-row{display:flex;gap:8px;overflow-x:auto;padding:8px 0;scrollbar-width:none}
+.filter-row::-webkit-scrollbar{display:none}
+.filter-chip{padding:8px 16px;background:var(--bg3);border:none;color:var(--text2);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:var(--transition);flex-shrink:0}
+.filter-chip.active{background:var(--accent);color:#fff}
+
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.stat-card{background:var(--card);border-radius:var(--radius);padding:16px;text-align:center}
+.stat-card .stat-num{font-size:28px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-card .stat-label{font-size:11px;color:var(--text2);margin-top:4px}
+.chart-container{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.chart-container h3{font-size:14px;margin-bottom:12px}
+canvas{width:100%;height:auto}
+
+.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.badge-item{background:var(--card);border-radius:var(--radius);padding:16px;text-align:center;opacity:.4;transition:var(--transition)}
+.badge-item.earned{opacity:1;animation:pulse .5s ease}
+.badge-item .badge-icon{font-size:36px;margin-bottom:8px}
+.badge-item .badge-name{font-size:11px;font-weight:600}
+
+.config-item{display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--card);border-radius:var(--radius);margin-bottom:8px}
+.config-item .config-left{display:flex;align-items:center;gap:12px}
+.config-item .config-left .config-icon{font-size:22px}
+.config-item .config-left div h4{font-size:14px}
+.config-item .config-left div p{font-size:11px;color:var(--text2)}
+.toggle{width:48px;height:28px;background:var(--bg3);border-radius:14px;position:relative;cursor:pointer;transition:var(--transition);border:none;flex-shrink:0}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;background:#fff;border-radius:50%;transition:var(--transition)}
+.toggle.on::after{left:23px}
+
+.empty-state{text-align:center;padding:40px 20px}
+.empty-state .empty-emoji{font-size:64px;margin-bottom:16px}
+.empty-state h3{font-size:18px;margin-bottom:8px}
+.empty-state p{font-size:13px;color:var(--text2)}
+
+.waste-input{display:flex;align-items:center;gap:8px;margin:16px 0}
+.waste-input span{font-size:20px;font-weight:700;color:var(--green)}
+
+.tip-card{background:linear-gradient(135deg,rgba(0,184,148,.12),rgba(0,184,148,.04));border-radius:var(--radius);padding:14px;margin-bottom:12px;border:1px solid rgba(0,184,148,.15);font-size:13px;display:flex;align-items:center;gap:10px}
+.tip-card .tip-icon{font-size:24px;flex-shrink:0}
+
+.search-bar{position:relative;margin-bottom:12px}
+.search-bar input{width:100%;padding:12px 16px 12px 42px;background:var(--bg3);border:2px solid transparent;border-radius:12px;color:var(--text);font-size:14px;outline:none;transition:var(--transition)}
+.search-bar input:focus{border-color:var(--accent)}
+.search-bar::before{content:'🔍';position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px}
+
+.photo-btn{width:100%;padding:30px;border:2px dashed var(--bg3);border-radius:12px;background:none;color:var(--text2);font-size:14px;cursor:pointer;text-align:center;transition:var(--transition)}
+.photo-btn:active{border-color:var(--accent);color:var(--accent)}
+.photo-preview{width:100%;height:120px;object-fit:cover;border-radius:12px;margin-top:8px}
+
+.share-code{font-size:36px;font-weight:900;letter-spacing:12px;text-align:center;padding:20px;background:var(--bg3);border-radius:var(--radius);font-family:monospace;color:var(--accent)}
+
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);background:var(--card);color:var(--text);padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;z-index:300;box-shadow:var(--shadow);transition:var(--transition);display:flex;align-items:center;gap:8px;max-width:90vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+.freezer-info{background:linear-gradient(135deg,rgba(116,185,255,.12),rgba(116,185,255,.04));border-radius:12px;padding:12px;margin-top:8px;font-size:12px;color:#74b9ff;border:1px solid rgba(116,185,255,.15)}
+
+/* AI Badge */
+.ai-badge{display:inline-flex;align-items:center;gap:3px;background:linear-gradient(135deg,rgba(108,92,231,.25),rgba(168,85,247,.15));color:var(--accent2);font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;letter-spacing:.5px;vertical-align:middle}
+.ai-badge::before{content:'✨'}
+
+/* AI Loading Shimmer */
+.ai-loading{background:linear-gradient(90deg,var(--bg3) 25%,rgba(108,92,231,.15) 50%,var(--bg3) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:var(--radius);padding:20px;margin-bottom:12px;text-align:center;color:var(--text2);font-size:13px}
+.ai-loading .ai-spinner{display:inline-block;animation:sparkle 1s infinite;margin-right:6px}
+
+/* AI NL Input */
+.nl-input-wrap{position:relative;margin-bottom:16px}
+.nl-input-wrap textarea{width:100%;padding:14px 50px 14px 16px;background:var(--bg3);border:2px solid transparent;border-radius:12px;color:var(--text);font-size:14px;outline:none;resize:none;height:48px;font-family:inherit;transition:var(--transition)}
+.nl-input-wrap textarea:focus{border-color:var(--accent);height:80px}
+.nl-input-wrap textarea::placeholder{color:var(--text2)}
+.nl-send-btn{position:absolute;right:8px;top:8px;width:34px;height:34px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
+.nl-send-btn:active{transform:scale(.85)}
+
+/* AI Tip Card */
+.ai-tip-card{background:linear-gradient(135deg,rgba(168,85,247,.12),rgba(108,92,231,.06));border-radius:var(--radius);padding:14px;margin-bottom:12px;border:1px solid rgba(168,85,247,.15);font-size:13px;line-height:1.5}
+.ai-tip-card .ai-tip-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:700;font-size:14px}
+
+/* AI Photo result */
+.ai-photo-result{background:linear-gradient(135deg,rgba(108,92,231,.15),rgba(168,85,247,.08));border:1px solid rgba(108,92,231,.2);border-radius:12px;padding:12px;margin-top:8px;font-size:13px}
+.ai-photo-result h4{font-size:13px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.ai-photo-result p{font-size:12px;color:var(--text2);margin:2px 0}
+.ai-photo-result .ai-apply-btn{margin-top:8px;padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;transition:var(--transition)}
+.ai-photo-result .ai-apply-btn:active{transform:scale(.95)}
+</style>
+</head>
+<body>
+<div id="toast" class="toast"></div>
+
+<header class="header">
+  <h1>🥦 Validade</h1>
+  <div class="header-actions">
+    <button class="header-btn" onclick="showNotifSummary()" title="Notificações">🔔</button>
+    <button class="header-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
+  </div>
+</header>
+
+<!-- HOME PAGE -->
+<div id="page-home" class="page active">
+  <div id="streak-section"></div>
+  <!-- AI Natural Language Add -->
+  <div class="nl-input-wrap">
+    <textarea id="nlInput" placeholder="✨ Digite naturalmente: &quot;comprei 2L de leite, vence dia 20&quot;" rows="1"></textarea>
+    <button class="nl-send-btn" onclick="processNaturalLanguage()">➤</button>
+  </div>
+  <div id="nlResult"></div>
+  <div id="alerts-section"></div>
+  <div id="ai-tip-section"></div>
+  <div id="tip-section"></div>
+  <div id="recipe-suggestion"></div>
+  <div id="waste-summary"></div>
+  <div id="home-empty" class="empty-state" style="display:none">
+    <div class="empty-emoji">🛒</div>
+    <h3>Sua despensa está vazia!</h3>
+    <p>Toque no + para adicionar ou digite acima com IA</p>
+  </div>
+</div>
+
+<!-- ITEMS PAGE -->
+<div id="page-items" class="page">
+  <div class="search-bar"><input type="text" id="searchInput" placeholder="Buscar itens..." oninput="renderItems()"></div>
+  <div class="filter-row" id="filterRow"></div>
+  <div id="items-list"></div>
+  <div id="items-empty" class="empty-state" style="display:none">
+    <div class="empty-emoji">📦</div>
+    <h3>Nenhum item encontrado</h3>
+    <p>Adicione itens para começar a rastrear</p>
+  </div>
+</div>
+
+<!-- STATS PAGE -->
+<div id="page-stats" class="page">
+  <div class="stat-grid" id="statGrid"></div>
+  <div class="chart-container"><h3>📊 Consumidos vs Desperdiçados</h3><canvas id="pieChart" width="300" height="200"></canvas></div>
+  <div class="chart-container"><h3>💰 Desperdício Mensal (R$)</h3><canvas id="barChart" width="300" height="200"></canvas></div>
+  <div class="section-title">🏅 Conquistas</div>
+  <div class="badge-grid" id="badgeGrid"></div>
+</div>
+
+<!-- CONFIG PAGE -->
+<div id="page-config" class="page">
+  <div class="section-title">⚙️ Configurações</div>
+  <div class="config-item">
+    <div class="config-left"><span class="config-icon">🌙</span><div><h4>Tema Escuro</h4><p>Aparência do app</p></div></div>
+    <button class="toggle" id="darkToggle" onclick="toggleTheme()"></button>
+  </div>
+  <div class="config-item">
+    <div class="config-left"><span class="config-icon">🔔</span><div><h4>Notificações</h4><p>3 dias, 1 dia, no dia</p></div></div>
+    <button class="toggle" id="notifToggle" onclick="toggleNotif()"></button>
+  </div>
+  <div class="config-item" onclick="showMorningSummaryConfig()">
+    <div class="config-left"><span class="config-icon">☀️</span><div><h4>Resumo Matinal</h4><p>Notificação diária às 8h</p></div></div>
+    <button class="toggle" id="morningToggle"></button>
+  </div>
+  <div class="section-title">🏠 Compartilhar Despensa</div>
+  <div class="card">
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Compartilhe sua despensa com familiares</p>
+    <div class="share-code" id="shareCode">------</div>
+    <button class="btn btn-primary" style="margin-top:12px" onclick="generateShareCode()">Gerar Código</button>
+  </div>
+  <div class="section-title">💾 Dados</div>
+  <div class="config-item" onclick="exportBackup()" style="cursor:pointer">
+    <div class="config-left"><span class="config-icon">📤</span><div><h4>Exportar Backup</h4><p>Salvar dados em JSON</p></div></div>
+  </div>
+  <div class="config-item" onclick="document.getElementById('importFile').click()" style="cursor:pointer">
+    <div class="config-left"><span class="config-icon">📥</span><div><h4>Importar Backup</h4><p>Restaurar dados de JSON</p></div></div>
+  </div>
+  <input type="file" id="importFile" accept=".json" style="display:none" onchange="importBackup(event)">
+  <div class="config-item" onclick="exportWhatsApp()" style="cursor:pointer">
+    <div class="config-left"><span class="config-icon">📱</span><div><h4>Compartilhar via WhatsApp</h4><p>Enviar lista como texto</p></div></div>
+  </div>
+  <div class="config-item" onclick="shareShoppingList()" style="cursor:pointer">
+    <div class="config-left"><span class="config-icon">🛒</span><div><h4>Lista de Compras</h4><p>Baseada em itens consumidos</p></div></div>
+  </div>
+  <div class="section-title" style="margin-top:24px">ℹ️ Sobre</div>
+  <div class="card" style="text-align:center">
+    <p style="font-size:13px;color:var(--text2)">Validade v2.0 <span class="ai-badge">IA</span></p>
+    <p style="font-size:12px;color:var(--text2);margin-top:4px">Rastreador inteligente de validade com Gemini AI</p>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab" onclick="openAddModal()">+</button>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <button class="nav-item active" data-page="home"><span class="icon">🏠</span>Início</button>
+  <button class="nav-item" data-page="items"><span class="icon">📦</span>Itens</button>
+  <button class="nav-item" data-page="stats"><span class="icon">📊</span>Stats</button>
+  <button class="nav-item" data-page="config"><span class="icon">⚙️</span>Config</button>
+</nav>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="addModal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <h2 id="modalTitle">Adicionar Item</h2>
+  <div class="section-title">⚡ Adicionar Rápido</div>
+  <div class="quick-add" id="quickAdd"></div>
+  <div class="form-group"><label>Nome</label><input class="form-input" id="fName" placeholder="Ex: Leite Integral"></div>
+  <div class="form-group"><label>Categoria</label><select class="form-input" id="fCategory"></select></div>
+  <div class="form-group"><label>Local</label><select class="form-input" id="fLocation"><option value="geladeira">🧊 Geladeira</option><option value="freezer">❄️ Freezer</option><option value="despensa">🏠 Despensa</option><option value="banheiro">🚿 Banheiro</option></select></div>
+  <div style="display:flex;gap:10px">
+    <div class="form-group" style="flex:1"><label>Quantidade</label><input class="form-input" id="fQty" type="number" value="1" min="1"></div>
+    <div class="form-group" style="flex:1"><label>Unidade</label><select class="form-input" id="fUnit"><option>un</option><option>L</option><option>kg</option><option>g</option><option>ml</option><option>pct</option></select></div>
+  </div>
+  <div class="form-group"><label>Data de Validade</label><input class="form-input" id="fExpiry" type="date"></div>
+  <div class="form-group"><label>Preço Estimado (R$)</label><input class="form-input" id="fPrice" type="number" step="0.01" placeholder="0.00"></div>
+  <div class="form-group"><label>Notas</label><input class="form-input" id="fNotes" placeholder="Observações..."></div>
+  <div class="form-group">
+    <label>📸 Foto <span class="ai-badge">IA</span></label>
+    <button class="photo-btn" id="photoBtn" onclick="capturePhoto()">📷 Tirar Foto — a IA identifica o produto!</button>
+    <img id="photoPreview" class="photo-preview" style="display:none">
+    <div id="aiPhotoResult"></div>
+    <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
+  </div>
+  <div id="freezerInfoBox" class="freezer-info" style="display:none"></div>
+  <input type="hidden" id="fId">
+  <button class="btn btn-primary" onclick="saveItem()">Salvar</button>
+  <button class="btn btn-secondary" style="margin-top:8px" onclick="closeModal('addModal')">Cancelar</button>
+</div>
+</div>
+
+<!-- WASTE MODAL -->
+<div class="modal-overlay" id="wasteModal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <h2>🗑️ Registrar Desperdício</h2>
+  <p style="font-size:14px;color:var(--text2);margin-bottom:16px;text-align:center" id="wasteItemName"></p>
+  <div class="form-group"><label>Preço estimado (R$)</label>
+    <div class="waste-input"><span>R$</span><input class="form-input" id="wastePrice" type="number" step="0.01" placeholder="0.00"></div>
+  </div>
+  <input type="hidden" id="wasteItemId">
+  <button class="btn btn-danger" onclick="confirmWaste()">Confirmar Desperdício</button>
+  <button class="btn btn-secondary" style="margin-top:8px" onclick="closeModal('wasteModal')">Cancelar</button>
+</div>
+</div>
+
+<!-- RECIPE MODAL -->
+<div class="modal-overlay" id="recipeModal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <h2>🍳 Receitas Anti-Desperdício</h2>
+  <div id="aiRecipeSection"></div>
+  <div class="section-title">📖 Receitas Clássicas</div>
+  <div id="recipeList"></div>
+  <button class="btn btn-secondary" style="margin-top:12px" onclick="closeModal('recipeModal')">Fechar</button>
+</div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <div id="detailContent"></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="editFromDetail()">✏️ Editar</button>
+    <button class="btn btn-secondary" onclick="consumeFromDetail()">✅ Consumido</button>
+  </div>
+  <button class="btn btn-danger" style="margin-top:8px" onclick="wasteFromDetail()">🗑️ Joguei Fora</button>
+  <button class="btn btn-secondary" style="margin-top:8px" id="freezeBtn" onclick="freezeFromDetail()">❄️ Congelar</button>
+  <button class="btn btn-secondary" style="margin-top:8px" onclick="closeModal('detailModal')">Fechar</button>
+</div>
+</div>
+
+<script>
+// ===== GEMINI API =====
+const GEMINI_KEY='AIzaSyBnqalI_0KRLZK7ccZ8_vaQSpvhLU_tP5k';
+const GEMINI_URL=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+
+// AI cache to avoid repeated calls
+const aiCache={recipes:null,recipesCacheKey:null,tips:null,tipsCacheDate:null};
+
+async function callGemini(parts,maxTokens=1024){
+  try{
+    const body={contents:[{parts}],generationConfig:{maxOutputTokens:maxTokens,temperature:0.7}};
+    const resp=await fetch(GEMINI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!resp.ok)throw new Error(`API ${resp.status}`);
+    const data=await resp.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text||null;
+  }catch(e){console.error('Gemini error:',e);return null}
+}
+
+function extractJSON(text){
+  if(!text)return null;
+  // Try to find JSON in the response
+  const m=text.match(/\[[\s\S]*\]/)||text.match(/\{[\s\S]*\}/);
+  if(!m)return null;
+  try{return JSON.parse(m[0])}catch(e){
+    // Try fixing common issues
+    try{return JSON.parse(m[0].replace(/,\s*([}\]])/g,'$1'))}catch(e2){return null}
+  }
+}
+
+// ===== DATA =====
+const CATEGORIES = [
+  {id:'laticinios',name:'Laticínios',emoji:'🥛',shelfDays:7},
+  {id:'carnes',name:'Carnes',emoji:'🥩',shelfDays:3},
+  {id:'hortifruti',name:'Hortifruti',emoji:'🥬',shelfDays:5},
+  {id:'padaria',name:'Padaria',emoji:'🍞',shelfDays:3},
+  {id:'enlatados',name:'Enlatados',emoji:'🥫',shelfDays:365},
+  {id:'higiene',name:'Higiene',emoji:'🧴',shelfDays:180},
+  {id:'medicamentos',name:'Medicamentos',emoji:'💊',shelfDays:365},
+  {id:'outros',name:'Outros',emoji:'📦',shelfDays:30}
+];
+
+const PRESETS = [
+  {name:'Leite',cat:'laticinios',days:7,emoji:'🥛'},
+  {name:'Ovos',cat:'laticinios',days:14,emoji:'🥚'},
+  {name:'Iogurte',cat:'laticinios',days:10,emoji:'🥛'},
+  {name:'Queijo',cat:'laticinios',days:14,emoji:'🧀'},
+  {name:'Manteiga',cat:'laticinios',days:30,emoji:'🧈'},
+  {name:'Frango',cat:'carnes',days:2,emoji:'🍗'},
+  {name:'Carne',cat:'carnes',days:3,emoji:'🥩'},
+  {name:'Peixe',cat:'carnes',days:2,emoji:'🐟'},
+  {name:'Pão',cat:'padaria',days:5,emoji:'🍞'},
+  {name:'Banana',cat:'hortifruti',days:5,emoji:'🍌'},
+  {name:'Tomate',cat:'hortifruti',days:7,emoji:'🍅'},
+  {name:'Alface',cat:'hortifruti',days:4,emoji:'🥬'},
+  {name:'Batata',cat:'hortifruti',days:14,emoji:'🥔'},
+  {name:'Arroz cozido',cat:'outros',days:3,emoji:'🍚'},
+  {name:'Presunto',cat:'carnes',days:5,emoji:'🥓'},
+];
+
+const RECIPES = [
+  {name:'Frango ao Molho de Tomate',ingredients:['frango','tomate'],desc:'Refogue o frango, adicione tomates picados, tempere com alho e ervas. Cozinhe por 30min.',time:'40min',diff:'Fácil'},
+  {name:'Carne com Batatas',ingredients:['carne','batata'],desc:'Corte em cubos, doure a carne, adicione batatas e cozinhe com caldo.',time:'50min',diff:'Médio'},
+  {name:'Omelete de Queijo',ingredients:['ovos','queijo'],desc:'Bata 3 ovos, despeje na frigideira, adicione queijo ralado e dobre.',time:'10min',diff:'Fácil'},
+  {name:'Bolo de Banana',ingredients:['banana'],desc:'Amasse 3 bananas maduras, misture com farinha, açúcar e ovos. Asse por 40min.',time:'50min',diff:'Fácil'},
+  {name:'Rabanada',ingredients:['pão','leite','ovos'],desc:'Molhe o pão no leite, passe no ovo batido e frite. Passe em açúcar com canela.',time:'20min',diff:'Fácil'},
+  {name:'Chocolate Quente',ingredients:['leite'],desc:'Aqueça o leite com chocolate em pó e açúcar. Mexa até engrossar.',time:'10min',diff:'Fácil'},
+  {name:'Bolinho de Arroz',ingredients:['arroz'],desc:'Misture arroz cozido com ovo, queijo e temperos. Frite em formato de bolinhos.',time:'25min',diff:'Fácil'},
+  {name:'Salada Caesar',ingredients:['alface','frango','queijo'],desc:'Monte com alface, frango desfiado, queijo parmesão e croutons.',time:'15min',diff:'Fácil'},
+  {name:'Purê de Batata',ingredients:['batata','leite','manteiga'],desc:'Cozinhe as batatas, amasse com leite e manteiga. Tempere a gosto.',time:'30min',diff:'Fácil'},
+  {name:'Sanduíche Natural',ingredients:['pão','presunto','queijo','tomate','alface'],desc:'Monte o sanduíche com os ingredientes. Ideal para lanche rápido!',time:'5min',diff:'Fácil'},
+  {name:'Banana Caramelizada',ingredients:['banana','manteiga'],desc:'Corte em rodelas, caramelize com açúcar e manteiga. Sirva com sorvete.',time:'10min',diff:'Fácil'},
+  {name:'Ovo Mexido com Tomate',ingredients:['ovos','tomate'],desc:'Refogue o tomate picado e adicione ovos batidos. Mexa até cozinhar.',time:'8min',diff:'Fácil'},
+  {name:'Frango Empanado',ingredients:['frango','ovos'],desc:'Passe o frango no ovo e na farinha de rosca. Frite até dourar.',time:'25min',diff:'Médio'},
+  {name:'Sopa de Legumes',ingredients:['batata','tomate'],desc:'Cozinhe legumes picados em caldo, bata no liquidificador.',time:'35min',diff:'Fácil'},
+  {name:'Torta de Frango',ingredients:['frango','leite','ovos'],desc:'Desfie o frango, prepare massa com leite e ovos, asse por 30min.',time:'45min',diff:'Médio'},
+  {name:'Crepioca',ingredients:['ovos'],desc:'Misture 1 ovo com 2 colheres de tapioca. Faça na frigideira como panqueca.',time:'5min',diff:'Fácil'},
+  {name:'Vitamina de Banana',ingredients:['banana','leite'],desc:'Bata banana com leite gelado no liquidificador. Adoce a gosto.',time:'5min',diff:'Fácil'},
+  {name:'Macarrão ao Molho',ingredients:['tomate'],desc:'Cozinhe o macarrão, faça molho com tomates frescos, alho e azeite.',time:'25min',diff:'Fácil'},
+  {name:'Pão com Ovo',ingredients:['pão','ovos'],desc:'Frite o ovo e sirva no pão. Simples e delicioso!',time:'5min',diff:'Fácil'},
+  {name:'Bruschetta',ingredients:['pão','tomate'],desc:'Torre fatias de pão, cubra com tomate picado, alho e azeite.',time:'10min',diff:'Fácil'},
+  {name:'Quiche de Queijo',ingredients:['ovos','queijo','leite'],desc:'Misture ovos, leite e queijo. Despeje em forma e asse por 35min.',time:'45min',diff:'Médio'},
+  {name:'Carne de Panela',ingredients:['carne'],desc:'Doure a carne, adicione água e temperos. Cozinhe em fogo baixo por 2h.',time:'120min',diff:'Médio'},
+  {name:'Peixe Assado',ingredients:['peixe','tomate','batata'],desc:'Coloque o peixe numa assadeira com batatas e tomates. Asse por 40min.',time:'50min',diff:'Médio'},
+];
+
+const FREEZER_DURATIONS = {
+  'frango':{months:9,tip:'Descongele na geladeira por 24h'},
+  'carne':{months:12,tip:'Descongele na geladeira ou em água fria'},
+  'peixe':{months:6,tip:'Descongele na geladeira. Não recongele.'},
+  'pão':{months:3,tip:'Descongele em temperatura ambiente ou torre direto'},
+  'leite':{months:3,tip:'Descongele na geladeira. Agite bem antes de usar.'},
+  'queijo':{months:6,tip:'Melhor para uso culinário após descongelado'},
+  'banana':{months:3,tip:'Congele sem casca. Ideal para vitaminas.'},
+  'default':{months:3,tip:'Descongele na geladeira por segurança'}
+};
+
+const SEASONAL_TIPS = {
+  0:['🌡️ Janeiro: Muito calor! Laticínios e carnes estraguem mais rápido fora da geladeira.','💡 Frutas da estação: manga, melancia, abacaxi.'],
+  1:['🌡️ Fevereiro: Cuidado com o calor! Verifique iogurtes e queijos.','💡 Aproveite o tomate — está na época!'],
+  2:['🍂 Março: O outono se aproxima. Frutas como abacate estão no ponto.','💡 Boa época para conservas caseiras.'],
+  3:['🍂 Abril: Temperaturas caindo. Sopas são ótimas para usar legumes!','💡 Batata e cenoura duram mais nessa época.'],
+  4:['🥶 Maio: Frio chegando. Alimentos na despensa duram um pouco mais.','💡 Época de tangerina e laranja.'],
+  5:['❄️ Junho: Inverno! Frutas duram mais na despensa.','💡 Aproveite para fazer caldos e sopas.'],
+  6:['❄️ Julho: Frio intenso. Menos risco de estragar fora da geladeira.','💡 Boa época para organizar o freezer.'],
+  7:['🌤️ Agosto: Ainda frio mas esquentando. Atenção aos frios.','💡 Época de morango!'],
+  8:['🌸 Setembro: Primavera! Hortifruti fresco dura menos.','💡 Folhas verdes precisam de mais atenção.'],
+  9:['🌸 Outubro: Calor voltando. Reforce a atenção com perecíveis.','💡 Época de melão e pepino.'],
+  10:['☀️ Novembro: Calor! Redobre o cuidado com laticínios.','💡 Manga e caju estão na estação.'],
+  11:['🎄 Dezembro: Festas! Compre com consciência para não desperdiçar.','💡 Planeje as compras de Natal para evitar sobras.']
+};
+
+const BADGES = [
+  {id:'mestre',name:'Mestre da Despensa',icon:'👑',desc:'30 dias sem desperdício',check:s=>s.streak>=30},
+  {id:'chef',name:'Chef Criativo',icon:'👨‍🍳',desc:'Usou 5 sugestões de receita',check:s=>s.recipesUsed>=5},
+  {id:'freezer',name:'Freezer Pro',icon:'❄️',desc:'10+ itens congelados gerenciados',check:s=>s.frozenManaged>=10},
+  {id:'tracker',name:'Rastreador',icon:'📊',desc:'50+ itens rastreados',check:s=>s.totalTracked>=50},
+  {id:'saver',name:'Econômico',icon:'💰',desc:'Economizou R$100+',check:s=>s.moneySaved>=100},
+  {id:'starter',name:'Primeiro Passo',icon:'🌟',desc:'Adicionou primeiro item',check:s=>s.totalTracked>=1},
+];
+
+// ===== STATE =====
+let state = loadState();
+
+function loadState(){
+  try{const s=JSON.parse(localStorage.getItem('validade_state'));return s||defaultState()}catch(e){return defaultState()}
+}
+function defaultState(){
+  return {items:[],stats:{streak:0,lastNoWasteDate:null,recipesUsed:0,frozenManaged:0,totalTracked:0,moneySaved:0,moneyWasted:0,wasteLog:[]},settings:{darkMode:true,notifications:false,morningSummary:false},shareCode:null};
+}
+function save(){localStorage.setItem('validade_state',JSON.stringify(state))}
+function uuid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,9)}
+function today(){return new Date().toISOString().split('T')[0]}
+function daysUntil(d){return Math.ceil((new Date(d+'T23:59:59')-new Date())/(864e5))}
+function getCatEmoji(catId){const c=CATEGORIES.find(x=>x.id===catId);return c?c.emoji:'📦'}
+function getCatName(catId){const c=CATEGORIES.find(x=>x.id===catId);return c?c.name:catId}
+function getStatusColor(days){if(days<0)return'red';if(days<=2)return'orange';if(days<=7)return'yellow';return'green'}
+function getStatusText(days){if(days<0)return`Vencido há ${Math.abs(days)}d`;if(days===0)return'Vence hoje!';if(days===1)return'Vence amanhã';return`${days} dias`}
+function locName(l){return{geladeira:'🧊 Geladeira',freezer:'❄️ Freezer',despensa:'🏠 Despensa',banheiro:'🚿 Banheiro'}[l]||l}
+
+// ===== TOAST =====
+function toast(msg,duration=2500){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),duration);
+}
+
+// ===== NAVIGATION =====
+document.querySelectorAll('.nav-item').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('page-'+btn.dataset.page).classList.add('active');
+    if(btn.dataset.page==='items')renderItems();
+    if(btn.dataset.page==='stats')renderStats();
+    if(btn.dataset.page==='config')renderConfig();
+    if(btn.dataset.page==='home')renderHome();
+  });
+});
+
+// ===== MODAL HELPERS =====
+function openModal(id){document.getElementById(id).classList.add('active')}
+function closeModal(id){document.getElementById(id).classList.remove('active')}
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id)});
+});
+
+// ===== AI FEATURE 1: PHOTO RECOGNITION =====
+async function aiRecognizePhoto(base64Data){
+  const mimeMatch=base64Data.match(/^data:(image\/\w+);base64,/);
+  const mimeType=mimeMatch?mimeMatch[1]:'image/jpeg';
+  const rawBase64=base64Data.replace(/^data:image\/\w+;base64,/,'');
+
+  const parts=[
+    {text:'Identifique este produto alimentício/doméstico na foto. Responda APENAS em JSON válido, sem markdown: {"name":"nome do produto","category":"uma de: laticinios, carnes, hortifruti, padaria, enlatados, higiene, medicamentos, outros","typicalShelfLifeDays":numero,"suggestedLocation":"uma de: geladeira, freezer, despensa, banheiro","estimatedPrice":numero_em_reais}'},
+    {inlineData:{mimeType,data:rawBase64}}
+  ];
+
+  document.getElementById('aiPhotoResult').innerHTML='<div class="ai-loading"><span class="ai-spinner">✨</span> IA analisando foto...</div>';
+
+  const result=await callGemini(parts,512);
+  const parsed=extractJSON(result);
+
+  if(parsed&&parsed.name){
+    const cat=CATEGORIES.find(c=>c.id===parsed.category);
+    document.getElementById('aiPhotoResult').innerHTML=`
+      <div class="ai-photo-result">
+        <h4><span class="ai-badge">IA</span> Produto identificado!</h4>
+        <p>📦 <strong>${parsed.name}</strong></p>
+        <p>📁 ${cat?cat.emoji+' '+cat.name:parsed.category}</p>
+        <p>📅 Validade típica: ~${parsed.typicalShelfLifeDays} dias</p>
+        <p>📍 Local sugerido: ${locName(parsed.suggestedLocation||'geladeira')}</p>
+        ${parsed.estimatedPrice?`<p>💰 Preço estimado: R$ ${parsed.estimatedPrice.toFixed(2)}</p>`:''}
+        <button class="ai-apply-btn" onclick="applyAiPhoto()">✅ Aplicar Dados</button>
+      </div>`;
+    // Store for apply
+    window._aiPhotoData=parsed;
+  }else{
+    document.getElementById('aiPhotoResult').innerHTML='<div class="ai-photo-result"><p>❌ Não foi possível identificar. Preencha manualmente.</p></div>';
+  }
+}
+
+function applyAiPhoto(){
+  const d=window._aiPhotoData;if(!d)return;
+  document.getElementById('fName').value=d.name||'';
+  if(d.category){
+    renderCategorySelect();
+    document.getElementById('fCategory').value=d.category;
+  }
+  if(d.suggestedLocation)document.getElementById('fLocation').value=d.suggestedLocation;
+  if(d.typicalShelfLifeDays){
+    const dt=new Date();dt.setDate(dt.getDate()+d.typicalShelfLifeDays);
+    document.getElementById('fExpiry').value=dt.toISOString().split('T')[0];
+  }
+  if(d.estimatedPrice)document.getElementById('fPrice').value=d.estimatedPrice;
+  toast('✅ Dados da IA aplicados!');
+  // Trigger freezer info check
+  document.getElementById('fLocation').dispatchEvent(new Event('change'));
+}
+
+// ===== AI FEATURE 2: RECIPE SUGGESTIONS =====
+async function aiGetRecipes(expiringItems){
+  const names=expiringItems.map(i=>i.name);
+  const cacheKey=names.sort().join(',');
+  if(aiCache.recipes&&aiCache.recipesCacheKey===cacheKey)return aiCache.recipes;
+
+  const prompt=`Tenho estes ingredientes vencendo nos próximos 3 dias: ${names.join(', ')}. Sugira 3 receitas simples brasileiras usando esses ingredientes. Responda APENAS em JSON válido, sem markdown: [{"name":"nome","ingredients":["ing1","ing2"],"prepTime":"Xmin","difficulty":"Fácil/Médio","steps":"passo a passo resumido"}]`;
+
+  const result=await callGemini([{text:prompt}],1024);
+  const parsed=extractJSON(result);
+  if(Array.isArray(parsed)&&parsed.length){
+    aiCache.recipes=parsed;
+    aiCache.recipesCacheKey=cacheKey;
+    return parsed;
+  }
+  return null;
+}
+
+// ===== AI FEATURE 3: SMART TIPS =====
+async function aiGetSmartTips(){
+  const t=today();
+  // Cache for the day
+  if(aiCache.tips&&aiCache.tipsCacheDate===t)return aiCache.tips;
+
+  const items=state.items;
+  const active=items.filter(i=>i.status==='active'||i.status==='frozen');
+  const wasted=items.filter(i=>i.status==='wasted');
+  const consumed=items.filter(i=>i.status==='consumed');
+
+  if(active.length<3&&wasted.length<1)return null; // Not enough data
+
+  // Build consumption pattern summary
+  const wastedCats={};
+  wasted.forEach(i=>{wastedCats[i.category]=(wastedCats[i.category]||0)+1});
+  const totalItems=items.length;
+  const wasteRate=totalItems>0?((wasted.length/totalItems)*100).toFixed(0):0;
+
+  const summary=`Minha despensa:
+- ${active.length} itens ativos, ${consumed.length} consumidos, ${wasted.length} desperdiçados
+- Taxa de desperdício: ${wasteRate}%
+- Categorias mais desperdiçadas: ${Object.entries(wastedCats).sort((a,b)=>b[1]-a[1]).map(([k,v])=>getCatName(k)+' ('+v+')').join(', ')||'nenhuma'}
+- Total gasto com desperdício: R$ ${state.stats.moneyWasted.toFixed(2)}
+- Itens vencendo em 3 dias: ${active.filter(i=>daysUntil(i.expiryDate)<=3&&daysUntil(i.expiryDate)>=0).map(i=>i.name).join(', ')||'nenhum'}`;
+
+  const prompt=`Baseado neste perfil de consumo de alimentos de uma pessoa, dê 1-2 dicas curtas e personalizadas em português para reduzir desperdício. Seja específico e prático. Máximo 2 frases por dica. Responda APENAS em JSON: [{"tip":"texto da dica","emoji":"emoji relevante"}]\n\n${summary}`;
+
+  const result=await callGemini([{text:prompt}],512);
+  const parsed=extractJSON(result);
+  if(Array.isArray(parsed)&&parsed.length){
+    aiCache.tips=parsed;
+    aiCache.tipsCacheDate=t;
+    return parsed;
+  }
+  return null;
+}
+
+// ===== AI FEATURE 4: NATURAL LANGUAGE ADD =====
+async function processNaturalLanguage(){
+  const input=document.getElementById('nlInput').value.trim();
+  if(!input){toast('Digite algo!');return}
+
+  const resultDiv=document.getElementById('nlResult');
+  resultDiv.innerHTML='<div class="ai-loading"><span class="ai-spinner">✨</span> Entendendo...</div>';
+
+  const todayStr=today();
+  const prompt=`O usuário quer adicionar itens à despensa. Interprete o texto e extraia os dados. Data de hoje: ${todayStr}. Responda APENAS em JSON válido, sem markdown: [{"name":"nome","category":"laticinios/carnes/hortifruti/padaria/enlatados/higiene/medicamentos/outros","quantity":numero,"unit":"un/L/kg/g/ml/pct","expiryDate":"YYYY-MM-DD","location":"geladeira/freezer/despensa/banheiro","price":numero_ou_null}]. Se a data de validade não foi informada, estime baseado no tipo de produto. Texto: "${input}"`;
+
+  const result=await callGemini([{text:prompt}],512);
+  const parsed=extractJSON(result);
+
+  if(Array.isArray(parsed)&&parsed.length){
+    let html='';
+    parsed.forEach((item,i)=>{
+      const cat=CATEGORIES.find(c=>c.id===item.category);
+      html+=`<div class="ai-photo-result" style="margin-bottom:8px">
+        <h4>${cat?cat.emoji:''} ${item.name} <span class="ai-badge">IA</span></h4>
+        <p>📦 ${item.quantity||1} ${item.unit||'un'} · 📍 ${locName(item.location||'geladeira')} · 📅 ${item.expiryDate||'?'}</p>
+        <button class="ai-apply-btn" onclick="addFromNL(${i})">➕ Adicionar</button>
+      </div>`;
+    });
+    html+=`<button class="btn btn-primary" style="margin-top:8px;font-size:13px;padding:10px" onclick="addAllFromNL()">✅ Adicionar Todos (${parsed.length})</button>`;
+    resultDiv.innerHTML=html;
+    window._nlItems=parsed;
+  }else{
+    resultDiv.innerHTML='<div class="ai-photo-result"><p>❌ Não entendi. Tente: "2 litros de leite, vence dia 20"</p></div>';
+  }
+}
+
+function addFromNL(index){
+  const items=window._nlItems;if(!items||!items[index])return;
+  const item=items[index];
+  const loc=item.location||'geladeira';
+  state.items.push({
+    id:uuid(),name:item.name||'Item',category:item.category||'outros',location:loc,
+    quantity:item.quantity||1,unit:item.unit||'un',expiryDate:item.expiryDate||'',
+    addedDate:today(),photo:null,price:item.price||0,
+    status:loc==='freezer'?'frozen':'active',frozenDate:loc==='freezer'?today():null,notes:'Adicionado via IA'
+  });
+  state.stats.totalTracked++;
+  save();renderHome();renderItems();
+  toast('✅ '+item.name+' adicionado!');
+  // Remove button
+  event.target.textContent='✔️ Adicionado';
+  event.target.disabled=true;
+  event.target.style.opacity='.5';
+}
+
+function addAllFromNL(){
+  const items=window._nlItems;if(!items)return;
+  let count=0;
+  items.forEach(item=>{
+    const loc=item.location||'geladeira';
+    state.items.push({
+      id:uuid(),name:item.name||'Item',category:item.category||'outros',location:loc,
+      quantity:item.quantity||1,unit:item.unit||'un',expiryDate:item.expiryDate||'',
+      addedDate:today(),photo:null,price:item.price||0,
+      status:loc==='freezer'?'frozen':'active',frozenDate:loc==='freezer'?today():null,notes:'Adicionado via IA'
+    });
+    state.stats.totalTracked++;count++;
+  });
+  save();renderHome();renderItems();
+  document.getElementById('nlInput').value='';
+  document.getElementById('nlResult').innerHTML='';
+  toast(`✅ ${count} item(ns) adicionado(s)!`);
+}
+
+// NL input: Enter to send
+document.getElementById('nlInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();processNaturalLanguage()}
+});
+
+// ===== HOME =====
+function renderHome(){
+  const items = state.items.filter(i=>i.status==='active'||i.status==='frozen');
+  const expToday = items.filter(i=>i.status==='active'&&daysUntil(i.expiryDate)===0);
+  const exp3 = items.filter(i=>i.status==='active'&&daysUntil(i.expiryDate)>0&&daysUntil(i.expiryDate)<=3);
+  const expired = items.filter(i=>i.status==='active'&&daysUntil(i.expiryDate)<0);
+
+  updateStreak();
+  document.getElementById('streak-section').innerHTML=`
+    <div class="streak-card">
+      <div class="streak-fire">🔥</div>
+      <div class="streak-num">${state.stats.streak}</div>
+      <div class="streak-label">dias sem desperdício</div>
+    </div>`;
+
+  let alerts='';
+  if(expired.length) alerts+=`<div class="alert-card red"><span class="alert-icon">⚠️</span><div class="alert-info"><h3>${expired.length} item(ns) vencido(s)!</h3><p>Verifique e descarte se necessário</p></div><span class="alert-count">${expired.length}</span></div>`;
+  if(expToday.length) alerts+=`<div class="alert-card orange"><span class="alert-icon">⏰</span><div class="alert-info"><h3>${expToday.length} item(ns) vencem hoje!</h3><p>${expToday.map(i=>i.name).join(', ')}</p></div><span class="alert-count">${expToday.length}</span></div>`;
+  if(exp3.length) alerts+=`<div class="alert-card yellow"><span class="alert-icon">📅</span><div class="alert-info"><h3>${exp3.length} item(ns) nos próximos 3 dias</h3><p>${exp3.map(i=>i.name).join(', ')}</p></div><span class="alert-count">${exp3.length}</span></div>`;
+  document.getElementById('alerts-section').innerHTML=alerts;
+
+  // Seasonal tip
+  const month=new Date().getMonth();
+  const tips=SEASONAL_TIPS[month]||[];
+  const tip=tips[Math.floor(Math.random()*tips.length)]||'';
+  document.getElementById('tip-section').innerHTML=tip?`<div class="tip-card"><span class="tip-icon">🌡️</span>${tip}</div>`:'';
+
+  // AI Smart Tips (async, non-blocking)
+  renderAiTips();
+
+  // Recipe suggestion (static + AI)
+  const expiringSoon=items.filter(i=>i.status==='active'&&daysUntil(i.expiryDate)<=3&&daysUntil(i.expiryDate)>=0);
+  const recipe=findRecipe(expiringSoon);
+  const rs=document.getElementById('recipe-suggestion');
+  if(recipe){
+    rs.innerHTML=`<div class="section-title">🍳 Sugestão do Dia</div><div class="recipe-card" onclick="showAllRecipes()"><h3>🍳 ${recipe.name}</h3><p>${recipe.desc}</p><div class="recipe-meta"><span>⏱️ ${recipe.time}</span><span>📊 ${recipe.diff}</span></div></div>`;
+  }else rs.innerHTML='';
+
+  // Waste summary
+  const thisWeek=state.stats.wasteLog.filter(w=>{const d=new Date(w.date);const now=new Date();return(now-d)<7*864e5});
+  const weekWaste=thisWeek.reduce((s,w)=>s+w.price,0);
+  document.getElementById('waste-summary').innerHTML=weekWaste>0?`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><span style="font-size:12px;color:var(--text2)">Desperdício esta semana</span><div style="font-size:24px;font-weight:900;color:var(--red)">R$ ${weekWaste.toFixed(2)}</div></div><div style="font-size:11px;color:var(--text2)">≈ ${Math.floor(weekWaste/15)} refeições</div></div></div>`:'';
+
+  document.getElementById('home-empty').style.display=items.length===0?'block':'none';
+  if(items.length===0){document.getElementById('streak-section').innerHTML='';document.getElementById('waste-summary').innerHTML=''}
+}
+
+async function renderAiTips(){
+  const section=document.getElementById('ai-tip-section');
+  // Only fetch if we have some data
+  if(state.items.length<3){section.innerHTML='';return}
+  const tips=await aiGetSmartTips();
+  if(!tips||!tips.length){section.innerHTML='';return}
+  section.innerHTML=tips.map(t=>`<div class="ai-tip-card"><div class="ai-tip-header">${t.emoji||'🧠'} Dica da IA <span class="ai-badge">IA</span></div>${t.tip}</div>`).join('');
+}
+
+function findRecipe(expiringItems){
+  if(!expiringItems.length)return null;
+  const names=expiringItems.map(i=>i.name.toLowerCase());
+  let best=null,bestScore=0;
+  for(const r of RECIPES){
+    let score=0;
+    for(const ing of r.ingredients){if(names.some(n=>n.includes(ing)))score++}
+    if(score>bestScore){bestScore=score;best=r}
+  }
+  return best;
+}
+
+function updateStreak(){
+  const t=today();
+  const todayWaste=state.stats.wasteLog.some(w=>w.date===t);
+  if(!state.stats.lastNoWasteDate){state.stats.lastNoWasteDate=t;state.stats.streak=1;}
+  else if(!todayWaste){
+    const last=new Date(state.stats.lastNoWasteDate);
+    const now=new Date(t);
+    const diff=Math.floor((now-last)/864e5);
+    if(diff<=1){state.stats.streak+=(diff===1?1:0);state.stats.lastNoWasteDate=t;}
+    else{state.stats.streak=1;state.stats.lastNoWasteDate=t;}
+  }
+  save();
+}
+
+// ===== ITEMS =====
+function renderItems(){
+  const search=(document.getElementById('searchInput').value||'').toLowerCase();
+  const activeFilter=document.querySelector('.filter-chip.active');
+  const filterCat=activeFilter?activeFilter.dataset.cat:'all';
+  let items=state.items.filter(i=>i.status==='active'||i.status==='frozen');
+  if(search)items=items.filter(i=>i.name.toLowerCase().includes(search));
+  if(filterCat!=='all')items=items.filter(i=>i.category===filterCat);
+  items.sort((a,b)=>new Date(a.expiryDate)-new Date(b.expiryDate));
+
+  const fr=document.getElementById('filterRow');
+  fr.innerHTML=`<button class="filter-chip ${filterCat==='all'?'active':''}" data-cat="all" onclick="setFilter('all')">Todos (${state.items.filter(i=>i.status==='active'||i.status==='frozen').length})</button>`;
+  CATEGORIES.forEach(c=>{
+    const count=state.items.filter(i=>(i.status==='active'||i.status==='frozen')&&i.category===c.id).length;
+    if(count)fr.innerHTML+=`<button class="filter-chip ${filterCat===c.id?'active':''}" data-cat="${c.id}" onclick="setFilter('${c.id}')">${c.emoji} ${c.name} (${count})</button>`;
+  });
+
+  const list=document.getElementById('items-list');
+  document.getElementById('items-empty').style.display=items.length?'none':'block';
+  if(!items.length){list.innerHTML='';return}
+
+  list.innerHTML=items.map(item=>{
+    const d=item.status==='frozen'?'Congelado':getStatusText(daysUntil(item.expiryDate));
+    const color=item.status==='frozen'?'frozen':getStatusColor(daysUntil(item.expiryDate));
+    return `<div class="item-row" data-id="${item.id}" onclick="showDetail('${item.id}')">
+      <div class="item-bg left">✅ Consumido</div>
+      <div class="item-bg right">🗑️ Deletar</div>
+      <div class="item-content">
+        <span class="item-emoji">${getCatEmoji(item.category)}</span>
+        <div class="item-info"><h4>${item.name}</h4><p>${item.quantity}${item.unit} · ${locName(item.location)}</p></div>
+        <span class="item-badge ${color}">${d}</span>
+      </div>
+    </div>`;
+  }).join('');
+  setupSwipe();
+}
+
+function setFilter(cat){
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  document.querySelector(`.filter-chip[data-cat="${cat}"]`).classList.add('active');
+  renderItems();
+}
+
+// ===== SWIPE =====
+function setupSwipe(){
+  document.querySelectorAll('.item-row').forEach(row=>{
+    let startX=0,currentX=0,swiping=false;
+    const content=row.querySelector('.item-content');
+    row.addEventListener('touchstart',e=>{startX=e.touches[0].clientX;swiping=true;row.classList.add('swiping')},{passive:true});
+    row.addEventListener('touchmove',e=>{
+      if(!swiping)return;
+      currentX=e.touches[0].clientX-startX;
+      currentX=Math.max(-120,Math.min(120,currentX));
+      content.style.transform=`translateX(${currentX}px)`;
+    },{passive:true});
+    row.addEventListener('touchend',()=>{
+      row.classList.remove('swiping');
+      const id=row.dataset.id;
+      if(currentX>80){consumeItem(id);content.style.transform='translateX(100%)';}
+      else if(currentX<-80){deleteItem(id);content.style.transform='translateX(-100%)';}
+      else{content.style.transform='translateX(0)';}
+      swiping=false;currentX=0;
+    });
+  });
+}
+
+// ===== ADD/EDIT =====
+function openAddModal(presetData){
+  document.getElementById('modalTitle').textContent='Adicionar Item';
+  document.getElementById('fId').value='';
+  document.getElementById('fName').value=presetData?.name||'';
+  document.getElementById('fCategory').value=presetData?.cat||'laticinios';
+  document.getElementById('fLocation').value='geladeira';
+  document.getElementById('fQty').value=1;
+  document.getElementById('fUnit').value='un';
+  const d=new Date();d.setDate(d.getDate()+(presetData?.days||7));
+  document.getElementById('fExpiry').value=d.toISOString().split('T')[0];
+  document.getElementById('fPrice').value='';
+  document.getElementById('fNotes').value='';
+  document.getElementById('photoPreview').style.display='none';
+  document.getElementById('photoPreview').src='';
+  document.getElementById('aiPhotoResult').innerHTML='';
+  document.getElementById('freezerInfoBox').style.display='none';
+  window._aiPhotoData=null;
+  renderQuickAdd();
+  renderCategorySelect();
+  openModal('addModal');
+}
+
+function renderQuickAdd(){
+  document.getElementById('quickAdd').innerHTML=PRESETS.map(p=>`<button class="quick-chip" onclick="quickFill('${p.name}','${p.cat}',${p.days})">${p.emoji} ${p.name}</button>`).join('');
+}
+function quickFill(name,cat,days){
+  document.getElementById('fName').value=name;
+  document.getElementById('fCategory').value=cat;
+  const d=new Date();d.setDate(d.getDate()+days);
+  document.getElementById('fExpiry').value=d.toISOString().split('T')[0];
+  toast('✅ '+name+' preenchido!');
+}
+
+function renderCategorySelect(){
+  document.getElementById('fCategory').innerHTML=CATEGORIES.map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('');
+}
+
+function saveItem(){
+  const name=document.getElementById('fName').value.trim();
+  if(!name){toast('❌ Digite um nome!');return}
+  const id=document.getElementById('fId').value;
+  const loc=document.getElementById('fLocation').value;
+  const photoSrc=document.getElementById('photoPreview').src;
+  const item={
+    id:id||uuid(),name,
+    category:document.getElementById('fCategory').value,
+    location:loc,
+    quantity:parseFloat(document.getElementById('fQty').value)||1,
+    unit:document.getElementById('fUnit').value,
+    expiryDate:document.getElementById('fExpiry').value,
+    addedDate:today(),
+    photo:(photoSrc&&!photoSrc.endsWith('/'))?photoSrc:null,
+    price:parseFloat(document.getElementById('fPrice').value)||0,
+    status:loc==='freezer'?'frozen':'active',
+    frozenDate:loc==='freezer'?today():null,
+    notes:document.getElementById('fNotes').value
+  };
+  if(id){const idx=state.items.findIndex(i=>i.id===id);if(idx>=0)state.items[idx]=item;}
+  else{state.items.push(item);state.stats.totalTracked++;}
+  save();closeModal('addModal');renderHome();renderItems();
+  toast(id?'✅ Item atualizado!':'✅ Item adicionado!');
+}
+
+// Photo with AI recognition
+function capturePhoto(){document.getElementById('photoInput').click()}
+function handlePhoto(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    const base64=ev.target.result;
+    document.getElementById('photoPreview').src=base64;
+    document.getElementById('photoPreview').style.display='block';
+    // Trigger AI recognition
+    aiRecognizePhoto(base64);
+  };
+  reader.readAsDataURL(file);
+}
+
+// Location change → freezer info
+document.getElementById('fLocation').addEventListener('change',function(){
+  const box=document.getElementById('freezerInfoBox');
+  if(this.value==='freezer'){
+    const name=(document.getElementById('fName').value||'').toLowerCase();
+    const info=Object.entries(FREEZER_DURATIONS).find(([k])=>name.includes(k));
+    const data=info?info[1]:FREEZER_DURATIONS.default;
+    box.innerHTML=`❄️ Duração segura no freezer: ~${data.months} meses<br>💡 ${data.tip}`;
+    box.style.display='block';
+  }else box.style.display='none';
+});
+
+// ===== ITEM ACTIONS =====
+function consumeItem(id){
+  const item=state.items.find(i=>i.id===id);if(!item)return;
+  item.status='consumed';
+  state.stats.moneySaved+=item.price||0;
+  save();renderItems();renderHome();
+  toast('✅ '+item.name+' consumido!');
+}
+
+function deleteItem(id){
+  state.items=state.items.filter(i=>i.id!==id);
+  save();renderItems();renderHome();
+  toast('🗑️ Item removido');
+}
+
+function wasteItem(id){
+  const item=state.items.find(i=>i.id===id);if(!item)return;
+  document.getElementById('wasteItemId').value=id;
+  document.getElementById('wasteItemName').textContent=item.name;
+  document.getElementById('wastePrice').value=item.price||'';
+  openModal('wasteModal');
+}
+
+function confirmWaste(){
+  const id=document.getElementById('wasteItemId').value;
+  const price=parseFloat(document.getElementById('wastePrice').value)||0;
+  const item=state.items.find(i=>i.id===id);if(!item)return;
+  item.status='wasted';item.price=price;
+  state.stats.moneyWasted+=price;
+  state.stats.wasteLog.push({date:today(),price,item:item.name,category:item.category});
+  state.stats.streak=0;state.stats.lastNoWasteDate=null;
+  save();closeModal('wasteModal');closeModal('detailModal');renderItems();renderHome();
+  toast('😢 '+item.name+' desperdiçado — R$ '+price.toFixed(2));
+}
+
+function freezeItem(id){
+  const item=state.items.find(i=>i.id===id);if(!item)return;
+  item.status='frozen';item.frozenDate=today();item.location='freezer';
+  state.stats.frozenManaged++;
+  save();renderItems();renderHome();
+  toast('❄️ '+item.name+' congelado!');
+}
+
+// ===== DETAIL =====
+let currentDetailId=null;
+function showDetail(id){
+  currentDetailId=id;
+  const item=state.items.find(i=>i.id===id);if(!item)return;
+  const days=daysUntil(item.expiryDate);
+  const color=item.status==='frozen'?'frozen':getStatusColor(days);
+  const statusText=item.status==='frozen'?'❄️ Congelado':getStatusText(days);
+  let html=`<div style="text-align:center;margin-bottom:16px"><span style="font-size:48px">${getCatEmoji(item.category)}</span><h2 style="margin-top:8px">${item.name}</h2><span class="item-badge ${color}" style="display:inline-block;margin-top:8px;font-size:14px;padding:6px 16px">${statusText}</span></div>`;
+  html+=`<div class="card"><p>📁 ${getCatName(item.category)}</p><p>📍 ${locName(item.location)}</p><p>📦 ${item.quantity} ${item.unit}</p><p>📅 Validade: ${item.expiryDate}</p>`;
+  if(item.price)html+=`<p>💰 R$ ${item.price.toFixed(2)}</p>`;
+  if(item.notes)html+=`<p>📝 ${item.notes}</p>`;
+  if(item.frozenDate)html+=`<p>❄️ Congelado em: ${item.frozenDate}</p>`;
+  html+=`</div>`;
+  if(item.photo&&item.photo!=='null')html+=`<img src="${item.photo}" style="width:100%;border-radius:12px;margin-bottom:12px">`;
+  if(item.status==='frozen'){
+    const name=item.name.toLowerCase();
+    const info=Object.entries(FREEZER_DURATIONS).find(([k])=>name.includes(k));
+    const data=info?info[1]:FREEZER_DURATIONS.default;
+    const frozenDate=new Date(item.frozenDate);
+    const maxDate=new Date(frozenDate);maxDate.setMonth(maxDate.getMonth()+data.months);
+    html+=`<div class="freezer-info">❄️ Seguro até: ${maxDate.toISOString().split('T')[0]}<br>💡 ${data.tip}</div>`;
+  }
+  document.getElementById('detailContent').innerHTML=html;
+  document.getElementById('freezeBtn').style.display=item.status==='active'?'block':'none';
+  openModal('detailModal');
+}
+function editFromDetail(){
+  closeModal('detailModal');
+  const item=state.items.find(i=>i.id===currentDetailId);if(!item)return;
+  document.getElementById('modalTitle').textContent='Editar Item';
+  document.getElementById('fId').value=item.id;
+  document.getElementById('fName').value=item.name;
+  renderCategorySelect();
+  document.getElementById('fCategory').value=item.category;
+  document.getElementById('fLocation').value=item.location;
+  document.getElementById('fQty').value=item.quantity;
+  document.getElementById('fUnit').value=item.unit;
+  document.getElementById('fExpiry').value=item.expiryDate;
+  document.getElementById('fPrice').value=item.price||'';
+  document.getElementById('fNotes').value=item.notes||'';
+  document.getElementById('aiPhotoResult').innerHTML='';
+  if(item.photo&&item.photo!=='null'){document.getElementById('photoPreview').src=item.photo;document.getElementById('photoPreview').style.display='block';}
+  else{document.getElementById('photoPreview').style.display='none';}
+  renderQuickAdd();openModal('addModal');
+}
+function consumeFromDetail(){consumeItem(currentDetailId);closeModal('detailModal')}
+function wasteFromDetail(){closeModal('detailModal');wasteItem(currentDetailId)}
+function freezeFromDetail(){freezeItem(currentDetailId);closeModal('detailModal')}
+
+// ===== RECIPES (static + AI) =====
+async function showAllRecipes(){
+  const items=state.items.filter(i=>i.status==='active'&&daysUntil(i.expiryDate)<=5);
+  const names=items.map(i=>i.name.toLowerCase());
+
+  // Static recipes
+  let scored=RECIPES.map(r=>{let s=0;r.ingredients.forEach(ing=>{if(names.some(n=>n.includes(ing)))s+=2});return{...r,score:s}});
+  scored.sort((a,b)=>b.score-a.score);
+  document.getElementById('recipeList').innerHTML=scored.map(r=>`<div class="recipe-card" onclick="useRecipe()"><h3>${r.score>0?'⭐':''} 🍳 ${r.name}</h3><p>${r.desc}</p><div class="recipe-meta"><span>⏱️ ${r.time}</span><span>📊 ${r.diff}</span><span>🧂 ${r.ingredients.join(', ')}</span></div></div>`).join('');
+
+  // AI recipes section
+  const aiSection=document.getElementById('aiRecipeSection');
+  const expiringItems=state.items.filter(i=>i.status==='active'&&daysUntil(i.expiryDate)<=3&&daysUntil(i.expiryDate)>=0);
+
+  if(expiringItems.length>0){
+    aiSection.innerHTML=`<div class="section-title">✨ Receitas da IA <span class="ai-badge">IA</span></div><div class="ai-loading"><span class="ai-spinner">✨</span> Gerando receitas personalizadas...</div>`;
+    openModal('recipeModal');
+
+    const aiRecipes=await aiGetRecipes(expiringItems);
+    if(aiRecipes&&aiRecipes.length){
+      aiSection.innerHTML=`<div class="section-title">✨ Receitas da IA <span class="ai-badge">IA</span></div>`+
+        aiRecipes.map(r=>`<div class="recipe-card" onclick="useRecipe()"><h3>✨ ${r.name} <span class="ai-badge">IA</span></h3><p>${r.steps||''}</p><div class="recipe-meta"><span>⏱️ ${r.prepTime||'?'}</span><span>📊 ${r.difficulty||'?'}</span><span>🧂 ${(r.ingredients||[]).join(', ')}</span></div></div>`).join('');
+    }else{
+      aiSection.innerHTML=`<div class="section-title">✨ Receitas da IA <span class="ai-badge">IA</span></div><div class="ai-photo-result"><p>Não foi possível gerar receitas. Veja as clássicas abaixo!</p></div>`;
+    }
+  }else{
+    aiSection.innerHTML='';
+    openModal('recipeModal');
+  }
+}
+function useRecipe(){state.stats.recipesUsed++;save();toast('👨‍🍳 Receita selecionada! Bom apetite!')}
+
+// ===== STATS =====
+function renderStats(){
+  const consumed=state.items.filter(i=>i.status==='consumed').length;
+  const wasted=state.items.filter(i=>i.status==='wasted').length;
+  const active=state.items.filter(i=>i.status==='active'||i.status==='frozen').length;
+  document.getElementById('statGrid').innerHTML=`
+    <div class="stat-card"><div class="stat-num">${state.stats.totalTracked}</div><div class="stat-label">Itens Rastreados</div></div>
+    <div class="stat-card"><div class="stat-num">${active}</div><div class="stat-label">Itens Ativos</div></div>
+    <div class="stat-card"><div class="stat-num" style="-webkit-text-fill-color:var(--green)">R$ ${state.stats.moneySaved.toFixed(0)}</div><div class="stat-label">Economizado</div></div>
+    <div class="stat-card"><div class="stat-num" style="-webkit-text-fill-color:var(--red)">R$ ${state.stats.moneyWasted.toFixed(0)}</div><div class="stat-label">Desperdiçado</div></div>`;
+  drawPie(consumed,wasted);
+  drawBarChart();
+  renderBadges();
+}
+
+function drawPie(consumed,wasted){
+  const canvas=document.getElementById('pieChart');const ctx=canvas.getContext('2d');
+  canvas.width=300;canvas.height=200;ctx.clearRect(0,0,300,200);
+  const total=consumed+wasted;
+  if(!total){ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--text2');ctx.font='14px sans-serif';ctx.textAlign='center';ctx.fillText('Sem dados ainda',150,105);return}
+  const cx=100,cy=100,r=70;const consumedAngle=(consumed/total)*Math.PI*2;
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,0,consumedAngle);ctx.fillStyle='#00b894';ctx.fill();
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,consumedAngle,Math.PI*2);ctx.fillStyle='#d63031';ctx.fill();
+  ctx.beginPath();ctx.arc(cx,cy,40,0,Math.PI*2);ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--card').trim();ctx.fill();
+  ctx.fillStyle='#00b894';ctx.fillRect(210,60,14,14);ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--text').trim();ctx.font='12px sans-serif';ctx.textAlign='left';ctx.fillText(`Consumidos (${consumed})`,230,72);
+  ctx.fillStyle='#d63031';ctx.fillRect(210,90,14,14);ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--text').trim();ctx.fillText(`Desperdiçados (${wasted})`,230,102);
+}
+
+function drawBarChart(){
+  const canvas=document.getElementById('barChart');const ctx=canvas.getContext('2d');
+  canvas.width=300;canvas.height=200;ctx.clearRect(0,0,300,200);
+  const months={};
+  state.stats.wasteLog.forEach(w=>{const m=w.date.slice(0,7);months[m]=(months[m]||0)+w.price});
+  const keys=Object.keys(months).sort().slice(-6);
+  if(!keys.length){ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--text2');ctx.font='14px sans-serif';ctx.textAlign='center';ctx.fillText('Sem dados de desperdício',150,105);return}
+  const maxVal=Math.max(...keys.map(k=>months[k]),1);
+  const barW=36,gap=(300-keys.length*barW)/(keys.length+1);
+  keys.forEach((k,i)=>{
+    const h=(months[k]/maxVal)*140;const x=gap+(barW+gap)*i;const y=170-h;
+    const grad=ctx.createLinearGradient(x,y,x,170);
+    grad.addColorStop(0,'#d63031');grad.addColorStop(1,'#e84393');
+    ctx.fillStyle=grad;ctx.beginPath();ctx.roundRect(x,y,barW,h,4);ctx.fill();
+    ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--text2').trim();ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText(k.slice(5),x+barW/2,185);
+    ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--text').trim();ctx.font='10px sans-serif';ctx.fillText('R$'+months[k].toFixed(0),x+barW/2,y-4);
+  });
+}
+
+function renderBadges(){
+  const s=state.stats;
+  document.getElementById('badgeGrid').innerHTML=BADGES.map(b=>`<div class="badge-item ${b.check(s)?'earned':''}"><div class="badge-icon">${b.icon}</div><div class="badge-name">${b.name}</div></div>`).join('');
+}
+
+// ===== CONFIG =====
+function renderConfig(){
+  document.getElementById('darkToggle').classList.toggle('on',state.settings.darkMode);
+  document.getElementById('notifToggle').classList.toggle('on',state.settings.notifications);
+  document.getElementById('morningToggle').classList.toggle('on',state.settings.morningSummary);
+  if(state.shareCode)document.getElementById('shareCode').textContent=state.shareCode;
+}
+
+function toggleTheme(){
+  state.settings.darkMode=!state.settings.darkMode;
+  document.body.classList.toggle('light',!state.settings.darkMode);
+  document.getElementById('themeBtn').textContent=state.settings.darkMode?'🌙':'☀️';
+  save();renderConfig();
+}
+
+function toggleNotif(){
+  if(!state.settings.notifications&&'Notification' in window){
+    Notification.requestPermission().then(p=>{
+      state.settings.notifications=p==='granted';save();renderConfig();
+      if(p==='granted')toast('🔔 Notificações ativadas!');
+    });
+  }else{state.settings.notifications=!state.settings.notifications;save();renderConfig()}
+}
+
+function showMorningSummaryConfig(){
+  state.settings.morningSummary=!state.settings.morningSummary;save();renderConfig();
+  toast(state.settings.morningSummary?'☀️ Resumo matinal ativado':'Resumo matinal desativado');
+}
+
+function generateShareCode(){
+  const code=Math.random().toString().slice(2,8);
+  state.shareCode=code;save();
+  document.getElementById('shareCode').textContent=code;
+  toast('🔗 Código gerado: '+code);
+}
+
+function showNotifSummary(){
+  const items=state.items.filter(i=>i.status==='active');
+  const expiring=items.filter(i=>daysUntil(i.expiryDate)<=7&&daysUntil(i.expiryDate)>=0);
+  const expired=items.filter(i=>daysUntil(i.expiryDate)<0);
+  let msg='📋 Resumo:\n';
+  if(expired.length)msg+=`⚠️ ${expired.length} vencido(s)\n`;
+  if(expiring.length)msg+=`⏰ ${expiring.length} vencem em até 7 dias\n`;
+  if(!expired.length&&!expiring.length)msg+='✅ Tudo em ordem!';
+  toast(msg,3000);
+}
+
+// ===== EXPORT/IMPORT =====
+function exportBackup(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='validade_backup.json';a.click();
+  toast('📤 Backup exportado!');
+}
+
+function importBackup(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{state=JSON.parse(ev.target.result);save();renderHome();toast('📥 Backup restaurado!')}
+    catch(err){toast('❌ Arquivo inválido!')}
+  };
+  reader.readAsText(file);
+}
+
+function exportWhatsApp(){
+  const items=state.items.filter(i=>i.status==='active'||i.status==='frozen');
+  let text='🥦 *Minha Despensa - Validade*\n\n';
+  items.forEach(i=>{
+    const d=daysUntil(i.expiryDate);
+    const status=d<0?'🔴 VENCIDO':d<=2?'🟠 '+d+'d':d<=7?'🟡 '+d+'d':'🟢 '+d+'d';
+    text+=`${getCatEmoji(i.category)} ${i.name} — ${status}\n`;
+  });
+  text+=`\n📊 Total: ${items.length} itens`;
+  window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
+}
+
+function shareShoppingList(){
+  const consumed=state.items.filter(i=>i.status==='consumed');
+  const names=[...new Set(consumed.map(i=>i.name))];
+  if(!names.length){toast('Nenhum item consumido para gerar lista');return}
+  let text='🛒 *Lista de Compras*\n\n';
+  names.forEach(n=>text+=`☐ ${n}\n`);
+  window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
+}
+
+// ===== SERVICE WORKER =====
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(()=>console.log('SW registered')).catch(e=>console.log('SW error',e));
+}
+
+// ===== NOTIFICATIONS CHECK =====
+function checkNotifications(){
+  if(!state.settings.notifications)return;
+  const items=state.items.filter(i=>i.status==='active');
+  const expToday=items.filter(i=>daysUntil(i.expiryDate)===0);
+  const exp1=items.filter(i=>daysUntil(i.expiryDate)===1);
+  const exp3=items.filter(i=>daysUntil(i.expiryDate)===3);
+  if(expToday.length&&Notification.permission==='granted')new Notification('⚠️ Vence HOJE!',{body:expToday.map(i=>i.name).join(', ')});
+  if(exp1.length&&Notification.permission==='granted')new Notification('⏰ Vence amanhã',{body:exp1.map(i=>i.name).join(', ')});
+  if(exp3.length&&Notification.permission==='granted')new Notification('📅 Vence em 3 dias',{body:exp3.map(i=>i.name).join(', ')});
+}
+
+// ===== INIT =====
+function init(){
+  document.body.classList.toggle('light',!state.settings.darkMode);
+  document.getElementById('themeBtn').textContent=state.settings.darkMode?'🌙':'☀️';
+  renderHome();
+  checkNotifications();
+  setInterval(checkNotifications,3600000);
+}
+init();
+</script>
+</body>
+</html>
