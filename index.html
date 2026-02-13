@@ -294,7 +294,7 @@ canvas{width:100%;height:auto}
 </div>
 
 <!-- FAB -->
-<button class="fab" id="fab" onclick="openAddModal()">+</button>
+<button class="fab" id="fab" onclick="openAddModal()" aria-label="Adicionar item">+</button>
 
 <!-- Bottom Nav -->
 <nav class="bottom-nav">
@@ -511,14 +511,14 @@ function loadState(){
 function defaultState(){
   return {items:[],stats:{streak:0,lastNoWasteDate:null,recipesUsed:0,frozenManaged:0,totalTracked:0,moneySaved:0,moneyWasted:0,wasteLog:[]},settings:{darkMode:true,notifications:false,morningSummary:false},shareCode:null};
 }
-function save(){localStorage.setItem('validade_state',JSON.stringify(state))}
+function save(){try{localStorage.setItem('validade_state',JSON.stringify(state))}catch(e){console.error('Storage error:',e);toast('⚠️ Armazenamento cheio! Exclua fotos ou itens antigos.')}}
 function uuid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,9)}
 function today(){return new Date().toISOString().split('T')[0]}
-function daysUntil(d){return Math.ceil((new Date(d+'T23:59:59')-new Date())/(864e5))}
+function daysUntil(d){if(!d||d==='undefined'||d==='null')return 999;const t=new Date(d+'T23:59:59');if(isNaN(t))return 999;return Math.ceil((t-new Date())/(864e5))}
 function getCatEmoji(catId){const c=CATEGORIES.find(x=>x.id===catId);return c?c.emoji:'📦'}
 function getCatName(catId){const c=CATEGORIES.find(x=>x.id===catId);return c?c.name:catId}
-function getStatusColor(days){if(days<0)return'red';if(days<=2)return'orange';if(days<=7)return'yellow';return'green'}
-function getStatusText(days){if(days<0)return`Vencido há ${Math.abs(days)}d`;if(days===0)return'Vence hoje!';if(days===1)return'Vence amanhã';return`${days} dias`}
+function getStatusColor(days){if(days>=999)return'green';if(days<0)return'red';if(days<=2)return'orange';if(days<=7)return'yellow';return'green'}
+function getStatusText(days){if(days>=999)return'Sem validade';if(days<0)return`Vencido há ${Math.abs(days)}d`;if(days===0)return'Vence hoje!';if(days===1)return'Vence amanhã';return`${days} dias`}
 function locName(l){return{geladeira:'🧊 Geladeira',freezer:'❄️ Freezer',despensa:'🏠 Despensa',banheiro:'🚿 Banheiro'}[l]||l}
 
 // ===== TOAST =====
@@ -717,7 +717,8 @@ function addFromNL(index,btn){
 }
 
 function addAllFromNL(){
-  const items=window._nlItems;if(!items)return;
+  const items=window._nlItems;if(!items||!items.length)return;
+  window._nlItems=null;
   let count=0;
   items.forEach(item=>{
     const rawLoc=(item.location||'geladeira').trim().toLowerCase();
@@ -764,10 +765,11 @@ function renderHome(){
   if(exp3.length) alerts+=`<div class="alert-card yellow"><span class="alert-icon">📅</span><div class="alert-info"><h3>${exp3.length} item(ns) nos próximos 3 dias</h3><p>${exp3.map(i=>esc(i.name)).join(', ')}</p></div><span class="alert-count">${exp3.length}</span></div>`;
   document.getElementById('alerts-section').innerHTML=alerts;
 
-  // Seasonal tip
+  // Seasonal tip (cached to avoid flicker)
   const month=new Date().getMonth();
   const tips=SEASONAL_TIPS[month]||[];
-  const tip=tips[Math.floor(Math.random()*tips.length)]||'';
+  if(!window._cachedSeasonalTip)window._cachedSeasonalTip=tips[Math.floor(Math.random()*tips.length)]||'';
+  const tip=window._cachedSeasonalTip;
   document.getElementById('tip-section').innerHTML=tip?`<div class="tip-card"><span class="tip-icon">🌡️</span>${tip}</div>`:'';
 
   // AI Smart Tips (async, non-blocking)
@@ -814,6 +816,7 @@ function findRecipe(expiringItems){
 function updateStreak(){
   const t=today();
   const todayWaste=state.stats.wasteLog.some(w=>w.date===t);
+  const oldStreak=state.stats.streak;const oldDate=state.stats.lastNoWasteDate;
   if(!state.stats.lastNoWasteDate){state.stats.lastNoWasteDate=t;state.stats.streak=1;}
   else if(!todayWaste){
     const last=new Date(state.stats.lastNoWasteDate);
@@ -822,7 +825,7 @@ function updateStreak(){
     if(diff<=1){state.stats.streak+=(diff===1?1:0);state.stats.lastNoWasteDate=t;}
     else{state.stats.streak=1;state.stats.lastNoWasteDate=t;}
   }
-  save();
+  if(state.stats.streak!==oldStreak||state.stats.lastNoWasteDate!==oldDate)save();
 }
 
 // ===== ITEMS =====
@@ -849,7 +852,7 @@ function renderItems(){
   list.innerHTML=items.map(item=>{
     const d=item.status==='frozen'?'Congelado':getStatusText(daysUntil(item.expiryDate));
     const color=item.status==='frozen'?'frozen':getStatusColor(daysUntil(item.expiryDate));
-    return `<div class="item-row" data-id="${item.id}" onclick="showDetail('${item.id}')">
+    return `<div class="item-row" data-id="${item.id}" onclick="showDetail(this.dataset.id)">
       <div class="item-bg left">✅ Consumido</div>
       <div class="item-bg right">🗑️ Deletar</div>
       <div class="item-content">
@@ -896,6 +899,7 @@ function openAddModal(presetData){
   document.getElementById('modalTitle').textContent='Adicionar Item';
   document.getElementById('fId').value='';
   document.getElementById('fName').value=presetData?.name||'';
+  renderCategorySelect();
   document.getElementById('fCategory').value=presetData?.cat||'laticinios';
   document.getElementById('fLocation').value='geladeira';
   document.getElementById('fQty').value=1;
@@ -909,8 +913,8 @@ function openAddModal(presetData){
   document.getElementById('aiPhotoResult').innerHTML='';
   document.getElementById('freezerInfoBox').style.display='none';
   window._aiPhotoData=null;
+  window._photoCompressed=null;
   renderQuickAdd();
-  renderCategorySelect();
   openModal('addModal');
 }
 
@@ -935,6 +939,7 @@ function saveItem(){
   const id=document.getElementById('fId').value;
   const loc=document.getElementById('fLocation').value;
   const photoSrc=document.getElementById('photoPreview').src;
+  const existing=id?state.items.find(i=>i.id===id):null;
   const item={
     id:id||uuid(),name,
     category:document.getElementById('fCategory').value,
@@ -942,11 +947,11 @@ function saveItem(){
     quantity:parseFloat(document.getElementById('fQty').value)||1,
     unit:document.getElementById('fUnit').value,
     expiryDate:document.getElementById('fExpiry').value,
-    addedDate:today(),
-    photo:(photoSrc&&photoSrc.startsWith('data:'))?photoSrc:null,
+    addedDate:existing?existing.addedDate:today(),
+    photo:window._photoCompressed||(photoSrc&&photoSrc.startsWith('data:')?photoSrc:null)||(existing?existing.photo:null),
     price:parseFloat(document.getElementById('fPrice').value)||0,
-    status:loc==='freezer'?'frozen':'active',
-    frozenDate:loc==='freezer'?today():null,
+    status:existing?(loc==='freezer'&&existing.status==='active'?'frozen':loc!=='freezer'&&existing.status==='frozen'?'active':existing.status):(loc==='freezer'?'frozen':'active'),
+    frozenDate:loc==='freezer'?(existing&&existing.frozenDate?existing.frozenDate:today()):null,
     notes:document.getElementById('fNotes').value
   };
   if(id){const idx=state.items.findIndex(i=>i.id===id);if(idx>=0)state.items[idx]=item;}
@@ -962,10 +967,20 @@ function handlePhoto(e){
   const reader=new FileReader();
   reader.onload=function(ev){
     const base64=ev.target.result;
-    document.getElementById('photoPreview').src=base64;
-    document.getElementById('photoPreview').style.display='block';
-    // Trigger AI recognition
-    aiRecognizePhoto(base64);
+    // Compress for storage (max 800px wide, 0.6 quality)
+    const img=new Image();
+    img.onload=function(){
+      const maxW=800;const scale=img.width>maxW?maxW/img.width:1;
+      const c=document.createElement('canvas');c.width=img.width*scale;c.height=img.height*scale;
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      const compressed=c.toDataURL('image/jpeg',0.6);
+      document.getElementById('photoPreview').src=compressed;
+      document.getElementById('photoPreview').style.display='block';
+      // Use original for AI (better recognition), compressed for storage
+      window._photoCompressed=compressed;
+      aiRecognizePhoto(base64);
+    };
+    img.src=base64;
   };
   reader.readAsDataURL(file);
 }
@@ -1067,6 +1082,8 @@ function editFromDetail(){
   document.getElementById('fPrice').value=item.price||'';
   document.getElementById('fNotes').value=item.notes||'';
   document.getElementById('aiPhotoResult').innerHTML='';
+  window._photoCompressed=null;
+  window._aiPhotoData=null;
   if(item.photo&&item.photo!=='null'){document.getElementById('photoPreview').src=item.photo;document.getElementById('photoPreview').style.display='block';}
   else{document.getElementById('photoPreview').style.display='none';}
   renderQuickAdd();openModal('addModal');
@@ -1217,10 +1234,11 @@ function importBackup(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=function(ev){
-    try{const imported=JSON.parse(ev.target.result);const ds=defaultState();state={...ds,...imported,stats:{...ds.stats,...(imported.stats||{})},settings:{...ds.settings,...(imported.settings||{})}};save();renderHome();toast('📥 Backup restaurado!')}
+    try{const imported=JSON.parse(ev.target.result);const ds=defaultState();state={...ds,...imported,stats:{...ds.stats,...(imported.stats||{})},settings:{...ds.settings,...(imported.settings||{})}};save();document.body.classList.toggle('light',!state.settings.darkMode);document.getElementById('themeBtn').textContent=state.settings.darkMode?'🌙':'☀️';renderHome();toast('📥 Backup restaurado!')}
     catch(err){toast('❌ Arquivo inválido!')}
   };
   reader.readAsText(file);
+  e.target.value='';
 }
 
 function exportWhatsApp(){
