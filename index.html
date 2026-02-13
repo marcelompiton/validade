@@ -567,14 +567,15 @@ async function aiRecognizePhoto(base64Data){
 
   if(parsed&&parsed.name){
     const cat=CATEGORIES.find(c=>c.id===parsed.category);
+    const priceStr=typeof parsed.estimatedPrice==='number'?parsed.estimatedPrice.toFixed(2):null;
     document.getElementById('aiPhotoResult').innerHTML=`
       <div class="ai-photo-result">
         <h4><span class="ai-badge">IA</span> Produto identificado!</h4>
-        <p>📦 <strong>${parsed.name}</strong></p>
-        <p>📁 ${cat?cat.emoji+' '+cat.name:parsed.category}</p>
-        <p>📅 Validade típica: ~${parsed.typicalShelfLifeDays} dias</p>
+        <p>📦 <strong>${esc(parsed.name)}</strong></p>
+        <p>📁 ${cat?cat.emoji+' '+cat.name:esc(String(parsed.category||'outros'))}</p>
+        <p>📅 Validade típica: ~${parseInt(parsed.typicalShelfLifeDays)||7} dias</p>
         <p>📍 Local sugerido: ${locName(parsed.suggestedLocation||'geladeira')}</p>
-        ${parsed.estimatedPrice?`<p>💰 Preço estimado: R$ ${parsed.estimatedPrice.toFixed(2)}</p>`:''}
+        ${priceStr?`<p>💰 Preço estimado: R$ ${priceStr}</p>`:''}
         <button class="ai-apply-btn" onclick="applyAiPhoto()">✅ Aplicar Dados</button>
       </div>`;
     // Store for apply
@@ -589,14 +590,20 @@ function applyAiPhoto(){
   document.getElementById('fName').value=d.name||'';
   if(d.category){
     renderCategorySelect();
-    document.getElementById('fCategory').value=d.category;
+    const catVal=(d.category||'').trim().toLowerCase().replace(/\s+/g,'');
+    const validCat=CATEGORIES.find(c=>c.id===catVal);
+    document.getElementById('fCategory').value=validCat?validCat.id:'outros';
   }
-  if(d.suggestedLocation)document.getElementById('fLocation').value=d.suggestedLocation;
+  if(d.suggestedLocation){
+    const loc=(d.suggestedLocation||'').trim().toLowerCase();
+    const validLocs=['geladeira','freezer','despensa','banheiro'];
+    document.getElementById('fLocation').value=validLocs.includes(loc)?loc:'geladeira';
+  }
   if(d.typicalShelfLifeDays){
-    const dt=new Date();dt.setDate(dt.getDate()+d.typicalShelfLifeDays);
+    const dt=new Date();dt.setDate(dt.getDate()+(parseInt(d.typicalShelfLifeDays)||7));
     document.getElementById('fExpiry').value=dt.toISOString().split('T')[0];
   }
-  if(d.estimatedPrice)document.getElementById('fPrice').value=d.estimatedPrice;
+  if(d.estimatedPrice)document.getElementById('fPrice').value=parseFloat(d.estimatedPrice)||'';
   toast('✅ Dados da IA aplicados!');
   // Trigger freezer info check
   document.getElementById('fLocation').dispatchEvent(new Event('change'));
@@ -677,8 +684,8 @@ async function processNaturalLanguage(){
     parsed.forEach((item,i)=>{
       const cat=CATEGORIES.find(c=>c.id===item.category);
       html+=`<div class="ai-photo-result" style="margin-bottom:8px">
-        <h4>${cat?cat.emoji:''} ${item.name} <span class="ai-badge">IA</span></h4>
-        <p>📦 ${item.quantity||1} ${item.unit||'un'} · 📍 ${locName(item.location||'geladeira')} · 📅 ${item.expiryDate||'?'}</p>
+        <h4>${cat?cat.emoji:'📦'} ${esc(item.name||'Item')} <span class="ai-badge">IA</span></h4>
+        <p>📦 ${parseInt(item.quantity)||1} ${esc(item.unit||'un')} · 📍 ${locName(item.location||'geladeira')} · 📅 ${item.expiryDate||'?'}</p>
         <button class="ai-apply-btn" onclick="addFromNL(${i},this)">➕ Adicionar</button>
       </div>`;
     });
@@ -693,9 +700,12 @@ async function processNaturalLanguage(){
 function addFromNL(index,btn){
   const items=window._nlItems;if(!items||!items[index])return;
   const item=items[index];
-  const loc=item.location||'geladeira';
+  const rawLoc=(item.location||'geladeira').trim().toLowerCase();
+  const loc=['geladeira','freezer','despensa','banheiro'].includes(rawLoc)?rawLoc:'geladeira';
+  const rawCat=(item.category||'outros').trim().toLowerCase().replace(/\s+/g,'');
+  const cat=CATEGORIES.find(c=>c.id===rawCat)?rawCat:'outros';
   state.items.push({
-    id:uuid(),name:item.name||'Item',category:item.category||'outros',location:loc,
+    id:uuid(),name:item.name||'Item',category:cat,location:loc,
     quantity:item.quantity||1,unit:item.unit||'un',expiryDate:item.expiryDate||'',
     addedDate:today(),photo:null,price:item.price||0,
     status:loc==='freezer'?'frozen':'active',frozenDate:loc==='freezer'?today():null,notes:'Adicionado via IA'
@@ -710,9 +720,12 @@ function addAllFromNL(){
   const items=window._nlItems;if(!items)return;
   let count=0;
   items.forEach(item=>{
-    const loc=item.location||'geladeira';
+    const rawLoc=(item.location||'geladeira').trim().toLowerCase();
+    const loc=['geladeira','freezer','despensa','banheiro'].includes(rawLoc)?rawLoc:'geladeira';
+    const rawCat=(item.category||'outros').trim().toLowerCase().replace(/\s+/g,'');
+    const cat=CATEGORIES.find(c=>c.id===rawCat)?rawCat:'outros';
     state.items.push({
-      id:uuid(),name:item.name||'Item',category:item.category||'outros',location:loc,
+      id:uuid(),name:item.name||'Item',category:cat,location:loc,
       quantity:item.quantity||1,unit:item.unit||'un',expiryDate:item.expiryDate||'',
       addedDate:today(),photo:null,price:item.price||0,
       status:loc==='freezer'?'frozen':'active',frozenDate:loc==='freezer'?today():null,notes:'Adicionado via IA'
@@ -783,7 +796,7 @@ async function renderAiTips(){
   if(state.items.length<3){section.innerHTML='';return}
   const tips=await aiGetSmartTips();
   if(!tips||!tips.length){section.innerHTML='';return}
-  section.innerHTML=tips.map(t=>`<div class="ai-tip-card"><div class="ai-tip-header">${t.emoji||'🧠'} Dica da IA <span class="ai-badge">IA</span></div>${t.tip}</div>`).join('');
+  section.innerHTML=tips.map(t=>`<div class="ai-tip-card"><div class="ai-tip-header">${esc(t.emoji||'🧠')} Dica da IA <span class="ai-badge">IA</span></div>${esc(t.tip)}</div>`).join('');
 }
 
 function findRecipe(expiringItems){
@@ -1083,7 +1096,7 @@ async function showAllRecipes(){
     const aiRecipes=await aiGetRecipes(expiringItems);
     if(aiRecipes&&aiRecipes.length){
       aiSection.innerHTML=`<div class="section-title">✨ Receitas da IA <span class="ai-badge">IA</span></div>`+
-        aiRecipes.map(r=>`<div class="recipe-card" onclick="useRecipe()"><h3>✨ ${r.name} <span class="ai-badge">IA</span></h3><p>${r.steps||''}</p><div class="recipe-meta"><span>⏱️ ${r.prepTime||'?'}</span><span>📊 ${r.difficulty||'?'}</span><span>🧂 ${(r.ingredients||[]).join(', ')}</span></div></div>`).join('');
+        aiRecipes.map(r=>`<div class="recipe-card" onclick="useRecipe()"><h3>✨ ${esc(r.name)} <span class="ai-badge">IA</span></h3><p>${esc(r.steps||'')}</p><div class="recipe-meta"><span>⏱️ ${esc(r.prepTime||'?')}</span><span>📊 ${esc(r.difficulty||'?')}</span><span>🧂 ${(r.ingredients||[]).map(esc).join(', ')}</span></div></div>`).join('');
     }else{
       aiSection.innerHTML=`<div class="section-title">✨ Receitas da IA <span class="ai-badge">IA</span></div><div class="ai-photo-result"><p>Não foi possível gerar receitas. Veja as clássicas abaixo!</p></div>`;
     }
