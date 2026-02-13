@@ -1059,9 +1059,13 @@ function showDetail(id){
     const name=item.name.toLowerCase();
     const info=Object.entries(FREEZER_DURATIONS).find(([k])=>name.includes(k));
     const data=info?info[1]:FREEZER_DURATIONS.default;
-    const frozenDate=new Date(item.frozenDate);
-    const maxDate=new Date(frozenDate);maxDate.setMonth(maxDate.getMonth()+data.months);
-    html+=`<div class="freezer-info">❄️ Seguro até: ${maxDate.toISOString().split('T')[0]}<br>💡 ${data.tip}</div>`;
+    if(item.frozenDate){
+      const frozenDate=new Date(item.frozenDate);
+      const maxDate=new Date(frozenDate);maxDate.setMonth(maxDate.getMonth()+data.months);
+      html+=`<div class="freezer-info">❄️ Seguro até: ${maxDate.toISOString().split('T')[0]}<br>💡 ${data.tip}</div>`;
+    }else{
+      html+=`<div class="freezer-info">❄️ Duração segura: ~${data.months} meses<br>💡 ${data.tip}</div>`;
+    }
   }
   document.getElementById('detailContent').innerHTML=html;
   document.getElementById('freezeBtn').style.display=item.status==='active'?'block':'none';
@@ -1246,7 +1250,7 @@ function exportWhatsApp(){
   let text='🥦 *Minha Despensa - Validade*\n\n';
   items.forEach(i=>{
     const d=daysUntil(i.expiryDate);
-    const status=d<0?'🔴 VENCIDO':d<=2?'🟠 '+d+'d':d<=7?'🟡 '+d+'d':'🟢 '+d+'d';
+    const status=d>=999?'⚪ S/V':d<0?'🔴 VENCIDO':d<=2?'🟠 '+d+'d':d<=7?'🟡 '+d+'d':'🟢 '+d+'d';
     text+=`${getCatEmoji(i.category)} ${i.name} — ${status}\n`;
   });
   text+=`\n📊 Total: ${items.length} itens`;
