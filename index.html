@@ -576,33 +576,76 @@ async function aiRecognizePhoto(base64Data){
   const rawBase64=base64Data.replace(/^data:image\/\w+;base64,/,'');
 
   const parts=[
-    {text:'Identifique este produto alimentício/doméstico na foto. Responda APENAS em JSON válido, sem markdown: {"name":"nome do produto","category":"uma de: laticinios, carnes, hortifruti, padaria, enlatados, higiene, medicamentos, outros","typicalShelfLifeDays":numero,"suggestedLocation":"uma de: geladeira, freezer, despensa, banheiro","estimatedPrice":numero_em_reais}'},
+    {text:'Identifique TODOS os produtos alimentícios/domésticos visíveis na foto. Responda APENAS em JSON válido, sem markdown. Se for 1 produto: [{"name":"nome","category":"uma de: laticinios, carnes, hortifruti, padaria, enlatados, higiene, medicamentos, outros","typicalShelfLifeDays":numero,"suggestedLocation":"uma de: geladeira, freezer, despensa, banheiro","estimatedPrice":numero_em_reais}]. Se forem vários, retorne um array com todos.'},
     {inlineData:{mimeType,data:rawBase64}}
   ];
 
   document.getElementById('aiPhotoResult').innerHTML='<div class="ai-loading"><span class="ai-spinner">✨</span> IA analisando foto...</div>';
 
-  const result=await callGemini(parts,512);
-  const parsed=extractJSON(result);
+  const result=await callGemini(parts,1024);
+  let parsed=extractJSON(result);
 
-  if(parsed&&parsed.name){
-    const cat=CATEGORIES.find(c=>c.id===parsed.category);
-    const priceStr=typeof parsed.estimatedPrice==='number'?parsed.estimatedPrice.toFixed(2):null;
+  // Normalize: always work with array
+  if(parsed&&!Array.isArray(parsed)&&parsed.name)parsed=[parsed];
+  if(!Array.isArray(parsed)||!parsed.length||!parsed[0].name){
+    document.getElementById('aiPhotoResult').innerHTML='<div class="ai-photo-result"><p>❌ Não foi possível identificar. Preencha manualmente.</p></div>';
+    return;
+  }
+
+  if(parsed.length===1){
+    // Single product: auto-apply to form
+    const p=parsed[0];
+    const cat=CATEGORIES.find(c=>c.id===p.category);
+    const priceStr=typeof p.estimatedPrice==='number'?p.estimatedPrice.toFixed(2):null;
     document.getElementById('aiPhotoResult').innerHTML=`
       <div class="ai-photo-result">
         <h4><span class="ai-badge">IA</span> Produto identificado!</h4>
-        <p>📦 <strong>${esc(parsed.name)}</strong></p>
-        <p>📁 ${cat?cat.emoji+' '+cat.name:esc(String(parsed.category||'outros'))}</p>
-        <p>📅 Validade típica: ~${parseInt(parsed.typicalShelfLifeDays)||7} dias</p>
-        <p>📍 Local sugerido: ${locName(parsed.suggestedLocation||'geladeira')}</p>
+        <p>📦 <strong>${esc(p.name)}</strong></p>
+        <p>📁 ${cat?cat.emoji+' '+cat.name:esc(String(p.category||'outros'))}</p>
+        <p>📅 Validade típica: ~${parseInt(p.typicalShelfLifeDays)||7} dias</p>
+        <p>📍 Local sugerido: ${locName(p.suggestedLocation||'geladeira')}</p>
         ${priceStr?`<p>💰 Preço estimado: R$ ${priceStr}</p>`:''}
       </div>`;
-    // Auto-apply data to form (small delay to ensure modal DOM is ready)
-    window._aiPhotoData=parsed;
+    window._aiPhotoData=p;
     setTimeout(()=>applyAiPhoto(),300);
   }else{
-    document.getElementById('aiPhotoResult').innerHTML='<div class="ai-photo-result"><p>❌ Não foi possível identificar. Preencha manualmente.</p></div>';
+    // Multiple products: show list with "Add All" button
+    window._aiPhotoMulti=parsed;
+    let html=`<div class="ai-photo-result"><h4><span class="ai-badge">IA</span> ${parsed.length} produtos encontrados!</h4>`;
+    parsed.forEach((p,i)=>{
+      const cat=CATEGORIES.find(c=>c.id===p.category);
+      const priceStr=typeof p.estimatedPrice==='number'?`R$ ${p.estimatedPrice.toFixed(2)}`:'';
+      html+=`<div style="padding:8px 0;${i>0?'border-top:1px solid var(--bg3)':''}">
+        <p>📦 <strong>${esc(p.name)}</strong> ${priceStr?'— '+priceStr:''}</p>
+        <p style="font-size:12px;color:var(--text2)">${cat?cat.emoji+' '+cat.name:esc(String(p.category||'outros'))} · ~${parseInt(p.typicalShelfLifeDays)||7} dias · ${locName(p.suggestedLocation||'geladeira')}</p>
+      </div>`;
+    });
+    html+=`<button class="ai-apply-btn" onclick="addAllPhotoItems()" style="width:100%;margin-top:8px">✅ Adicionar Todos (${parsed.length})</button></div>`;
+    document.getElementById('aiPhotoResult').innerHTML=html;
   }
+}
+
+function addAllPhotoItems(){
+  const items=window._aiPhotoMulti;if(!items||!items.length)return;
+  const photoSrc=window._photoCompressed||null;
+  items.forEach(p=>{
+    const dt=new Date();dt.setDate(dt.getDate()+(parseInt(p.typicalShelfLifeDays)||7));
+    const validCat=CATEGORIES.find(c=>c.id===(p.category||'').trim().toLowerCase())?p.category.trim().toLowerCase():'outros';
+    const validLocs=['geladeira','freezer','despensa','banheiro'];
+    const loc=validLocs.includes((p.suggestedLocation||'').toLowerCase())?p.suggestedLocation.toLowerCase():'geladeira';
+    state.items.push({
+      id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),
+      name:p.name,category:validCat,location:loc,
+      qty:1,unit:'un',expiryDate:dt.toISOString().split('T')[0],
+      addedDate:today(),photo:photoSrc,price:parseFloat(p.estimatedPrice)||0,
+      notes:'',status:'active',frozenDate:null
+    });
+    state.stats.totalTracked++;
+  });
+  save();renderHome();renderItems();
+  closeModal('addModal');
+  toast(`✅ ${items.length} itens adicionados!`);
+  window._aiPhotoMulti=null;
 }
 
 function applyAiPhoto(){
