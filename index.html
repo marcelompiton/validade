@@ -534,11 +534,27 @@ function getStatusText(days){if(days>=999)return'Sem validade';if(days<0)return`
 function locName(l){return{geladeira:'🧊 Geladeira',freezer:'❄️ Freezer',despensa:'🏠 Despensa',banheiro:'🚿 Banheiro'}[l]||l}
 function freezerMaxDate(item){
   if(!item.frozenDate)return null;
+  // Check if AI already calculated
+  if(item.freezerMaxDateCached)return item.freezerMaxDateCached;
+  // Fallback to table while AI loads
   const name=(item.name||'').toLowerCase();
   const match=Object.keys(FREEZER_DURATIONS).find(k=>k!=='default'&&name.includes(k));
   const dur=match?FREEZER_DURATIONS[match]:FREEZER_DURATIONS['default'];
   const fd=new Date(item.frozenDate);
   fd.setMonth(fd.getMonth()+dur.months);
+  // Ask AI in background for better estimate
+  if(!item._freezerAiAsked){
+    item._freezerAiAsked=true;
+    callGemini([{text:`Produto: "${item.name}". Quantos meses pode ficar congelado no freezer doméstico? Responda APENAS em JSON: {"months":numero,"tip":"dica curta"}`}],128).then(r=>{
+      const p=extractJSON(r);
+      if(p&&p.months){
+        const d2=new Date(item.frozenDate);d2.setMonth(d2.getMonth()+p.months);
+        item.freezerMaxDateCached=d2.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+        if(p.tip)item.freezerTip=p.tip;
+        save();renderItems();
+      }
+    }).catch(()=>{});
+  }
   return fd.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
 }
 
@@ -1215,23 +1231,32 @@ function editFromDetail(){
 function consumeFromDetail(){consumeItem(currentDetailId);closeModal('detailModal')}
 function wasteFromDetail(){closeModal('detailModal');wasteItem(currentDetailId)}
 function freezeFromDetail(){freezeItem(currentDetailId);closeModal('detailModal')}
-function unfreezeFromDetail(){
+async function unfreezeFromDetail(){
   const item=state.items.find(i=>i.id===currentDetailId);if(!item)return;
+  const btn=document.getElementById('unfreezeBtn');
+  btn.textContent='🔄 Consultando IA...';btn.disabled=true;
+
+  let days=3;let tip='Descongele na geladeira por segurança.';
+  try{
+    const prompt=`Produto: "${item.name}". Foi congelado. Agora será descongelado. Quantos dias dura na geladeira após descongelar? Responda APENAS em JSON: {"days":numero,"tip":"dica curta de como descongelar e conservar","bestLocation":"geladeira ou despensa"}`;
+    const result=await callGemini([{text:prompt}],256);
+    const parsed=extractJSON(result);
+    if(parsed&&parsed.days){
+      days=parseInt(parsed.days)||3;
+      tip=parsed.tip||tip;
+    }
+  }catch(e){console.error('AI unfreeze error:',e)}
+
   item.status='active';
   item.location='geladeira';
-  // Calculate new expiry: thawed items have shorter shelf life
-  const name=item.name.toLowerCase();
-  const match=Object.keys(FREEZER_DURATIONS).find(k=>k!=='default'&&name.includes(k));
-  const thawDays={'frango':2,'carne':3,'peixe':1,'pão':3,'leite':2,'queijo':5,'banana':2};
-  const key=match||'default';
-  const days=thawDays[key]||3;
   const newExpiry=new Date();
   newExpiry.setDate(newExpiry.getDate()+days);
   item.expiryDate=newExpiry.toISOString().split('T')[0];
   item.frozenDate=null;
   item.notes=(item.notes?item.notes+' | ':'')+'Descongelado em '+today();
   save();renderItems();renderHome();closeModal('detailModal');
-  toast(`🔥 ${item.name} descongelado! Validade: ${days} dias (até ${newExpiry.toLocaleDateString('pt-BR')})`);
+  toast(`🔥 ${item.name} descongelado! Validade: ${days} dias. ${tip}`);
+  btn.textContent='🔥 Descongelar';btn.disabled=false;
 }
 
 // ===== RECIPES (static + AI) =====
