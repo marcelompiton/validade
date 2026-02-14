@@ -1318,50 +1318,58 @@ function showMorningSummaryConfig(){
   toast(state.settings.morningSummary?'☀️ Resumo matinal ativado':'Resumo matinal desativado');
 }
 
-function generateShareCode(){
-  // Encode items as base64 in a shareable URL
-  const data={items:state.items,stats:state.stats};
-  const json=JSON.stringify(data);
-  const b64=btoa(unescape(encodeURIComponent(json)));
-  const url=location.origin+location.pathname+'?import='+b64;
-  // Also generate short display code
+async function generateShareCode(){
   const code=Math.random().toString(36).slice(2,8).toUpperCase();
-  state.shareCode=code;save();
-  document.getElementById('shareCode').textContent=code;
-  // Copy shareable link
-  if(navigator.share){
-    navigator.share({title:'Minha Despensa - Validade',text:'Importe minha despensa no app Validade!',url}).catch(()=>{});
-  }else{
-    navigator.clipboard.writeText(url).then(()=>toast('🔗 Link copiado! Envie para quem quiser importar.')).catch(()=>toast('🔗 Código: '+code));
-  }
-}
-function importShareCode(){
-  const input=document.getElementById('importCodeInput').value.trim();
-  if(!input){toast('❌ Cole o link ou código');return}
-  // If it's a full URL with ?import=
-  let b64=input;
-  if(input.includes('?import=')){b64=input.split('?import=')[1]}
+  const data={items:state.items.map(i=>({...i,photo:null})),stats:state.stats};
+  const btn=document.querySelector('[onclick="generateShareCode()"]');
+  btn.textContent='Gerando...';btn.disabled=true;
   try{
-    const json=decodeURIComponent(escape(atob(b64)));
-    const data=JSON.parse(json);
-    if(data.items&&Array.isArray(data.items)){
-      const count=data.items.length;
-      // Merge: add items that don't exist by name
-      const existingNames=new Set(state.items.map(i=>i.name.toLowerCase()));
-      let added=0;
-      data.items.forEach(item=>{
-        if(!existingNames.has(item.name.toLowerCase())){
-          item.id=Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-          state.items.push(item);
-          existingNames.add(item.name.toLowerCase());
-          added++;
-        }
-      });
-      save();renderHome();renderItems();
-      toast(`📥 ${added} itens importados de ${count}!`);
-      document.getElementById('importCodeInput').value='';
-    }else{toast('❌ Dados inválidos')}
-  }catch(e){toast('❌ Código inválido. Cole o link completo que recebeu.')}
+    const resp=await fetch('https://ntfy.sh/validade-share-'+code,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(data)
+    });
+    if(!resp.ok)throw new Error('Falha ao salvar');
+    state.shareCode=code;save();
+    document.getElementById('shareCode').textContent=code;
+    if(navigator.clipboard){
+      await navigator.clipboard.writeText(code);
+      toast('🔗 Código copiado! Envie para quem quiser importar. Válido por 12h.');
+    }else{
+      toast('🔗 Código: '+code+' — Válido por 12h.');
+    }
+  }catch(e){toast('❌ Erro ao gerar código. Tente novamente.')}
+  btn.textContent='Gerar Código';btn.disabled=false;
+}
+async function importShareCode(){
+  const code=document.getElementById('importCodeInput').value.trim().toUpperCase();
+  if(!code){toast('❌ Digite o código');return}
+  const btn=document.querySelector('[onclick="importShareCode()"]');
+  btn.textContent='Importando...';btn.disabled=true;
+  try{
+    const resp=await fetch('https://ntfy.sh/validade-share-'+code+'/json?poll=1&since=12h');
+    if(!resp.ok)throw new Error('Código não encontrado');
+    const text=await resp.text();
+    const lines=text.trim().split('\n');
+    // Get the latest message
+    const last=JSON.parse(lines[lines.length-1]);
+    const data=JSON.parse(last.message);
+    if(!data.items||!Array.isArray(data.items)){throw new Error('Dados inválidos')}
+    const existingNames=new Set(state.items.map(i=>i.name.toLowerCase()));
+    let added=0;
+    data.items.forEach(item=>{
+      if(!existingNames.has(item.name.toLowerCase())){
+        item.id=Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+        state.items.push(item);
+        existingNames.add(item.name.toLowerCase());
+        added++;
+      }
+    });
+    save();renderHome();renderItems();
+    toast(`📥 ${added} itens importados de ${data.items.length}!`);
+    document.getElementById('importCodeInput').value='';
+  }catch(e){toast('❌ Código não encontrado ou expirado. Peça um novo código.')}
+  btn.textContent='Importar';btn.disabled=false;
 }
 
 function showNotifSummary(){
