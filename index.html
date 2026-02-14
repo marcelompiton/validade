@@ -384,6 +384,7 @@ canvas{width:100%;height:auto}
   </div>
   <button class="btn btn-danger" style="margin-top:8px" onclick="wasteFromDetail()">🗑️ Joguei Fora</button>
   <button class="btn btn-secondary" style="margin-top:8px" id="freezeBtn" onclick="freezeFromDetail()">❄️ Congelar</button>
+  <button class="btn btn-secondary" style="margin-top:8px" id="unfreezeBtn" onclick="unfreezeFromDetail()">🔥 Descongelar</button>
   <button class="btn btn-secondary" style="margin-top:8px" onclick="closeModal('detailModal')">Fechar</button>
 </div>
 </div>
@@ -1187,6 +1188,7 @@ function showDetail(id){
   }
   document.getElementById('detailContent').innerHTML=html;
   document.getElementById('freezeBtn').style.display=item.status==='active'?'block':'none';
+  document.getElementById('unfreezeBtn').style.display=item.status==='frozen'?'block':'none';
   openModal('detailModal');
 }
 function editFromDetail(){
@@ -1213,6 +1215,24 @@ function editFromDetail(){
 function consumeFromDetail(){consumeItem(currentDetailId);closeModal('detailModal')}
 function wasteFromDetail(){closeModal('detailModal');wasteItem(currentDetailId)}
 function freezeFromDetail(){freezeItem(currentDetailId);closeModal('detailModal')}
+function unfreezeFromDetail(){
+  const item=state.items.find(i=>i.id===currentDetailId);if(!item)return;
+  item.status='active';
+  item.location='geladeira';
+  // Calculate new expiry: thawed items have shorter shelf life
+  const name=item.name.toLowerCase();
+  const match=Object.keys(FREEZER_DURATIONS).find(k=>k!=='default'&&name.includes(k));
+  const thawDays={'frango':2,'carne':3,'peixe':1,'pão':3,'leite':2,'queijo':5,'banana':2};
+  const key=match||'default';
+  const days=thawDays[key]||3;
+  const newExpiry=new Date();
+  newExpiry.setDate(newExpiry.getDate()+days);
+  item.expiryDate=newExpiry.toISOString().split('T')[0];
+  item.frozenDate=null;
+  item.notes=(item.notes?item.notes+' | ':'')+'Descongelado em '+today();
+  save();renderItems();renderHome();closeModal('detailModal');
+  toast(`🔥 ${item.name} descongelado! Validade: ${days} dias (até ${newExpiry.toLocaleDateString('pt-BR')})`);
+}
 
 // ===== RECIPES (static + AI) =====
 async function showAllRecipes(){
