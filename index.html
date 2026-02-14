@@ -590,9 +590,9 @@ async function aiRecognizePhoto(base64Data){
         <p>📍 Local sugerido: ${locName(parsed.suggestedLocation||'geladeira')}</p>
         ${priceStr?`<p>💰 Preço estimado: R$ ${priceStr}</p>`:''}
       </div>`;
-    // Auto-apply data to form
+    // Auto-apply data to form (small delay to ensure modal DOM is ready)
     window._aiPhotoData=parsed;
-    applyAiPhoto();
+    setTimeout(()=>applyAiPhoto(),300);
   }else{
     document.getElementById('aiPhotoResult').innerHTML='<div class="ai-photo-result"><p>❌ Não foi possível identificar. Preencha manualmente.</p></div>';
   }
@@ -602,7 +602,7 @@ function applyAiPhoto(){
   const d=window._aiPhotoData;if(!d)return;
   document.getElementById('fName').value=d.name||'';
   if(d.category){
-    renderCategorySelect();
+    if(!document.getElementById('fCategory').options.length)renderCategorySelect();
     const catVal=(d.category||'').trim().toLowerCase().replace(/\s+/g,'');
     const validCat=CATEGORIES.find(c=>c.id===catVal);
     document.getElementById('fCategory').value=validCat?validCat.id:'outros';
