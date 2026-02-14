@@ -286,10 +286,8 @@ canvas{width:100%;height:auto}
     <button class="btn btn-primary" style="margin-top:12px" onclick="generateShareCode()">Gerar Código</button>
     <div style="border-top:1px solid var(--bg3);margin-top:16px;padding-top:16px">
       <p style="font-size:13px;color:var(--text2);margin-bottom:8px">Recebeu um código? Cole aqui para sincronizar:</p>
-      <div style="display:flex;gap:8px">
-        <input class="form-input" id="importCodeInput" placeholder="Ex: A3F7K2" style="flex:1;text-transform:uppercase;letter-spacing:4px;font-weight:700;text-align:center">
-        <button class="btn btn-primary" onclick="importShareCode()" style="white-space:nowrap">Importar</button>
-      </div>
+      <input class="form-input" id="importCodeInput" placeholder="Cole o link aqui" style="width:100%;margin-bottom:8px;font-size:14px;padding:12px">
+      <button class="btn btn-primary" onclick="importShareCode()" style="width:100%">Importar</button>
     </div>
   </div>
   <div class="section-title">💾 Dados</div>
