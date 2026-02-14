@@ -263,7 +263,16 @@ canvas{width:100%;height:auto}
     <div class="config-left"><span class="config-icon">☀️</span><div><h4>Resumo Matinal</h4><p>Notificação diária às 8h</p></div></div>
     <button class="toggle" id="morningToggle"></button>
   </div>
-  <div class="section-title">🏠 Compartilhar Despensa</div>
+  <div class="section-title">🏠 Minhas Casas</div>
+  <div class="card">
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Gerencie os locais onde você armazena alimentos</p>
+    <div id="housesList"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <input class="form-input" id="newHouseName" placeholder="Ex: Casa da mãe, Trabalho..." style="flex:1">
+      <button class="btn btn-primary" onclick="addHouse()" style="white-space:nowrap">+ Adicionar</button>
+    </div>
+  </div>
+  <div class="section-title">🔗 Compartilhar Despensa</div>
   <div class="card">
     <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Compartilhe sua despensa com familiares</p>
     <div class="share-code" id="shareCode">------</div>
@@ -336,6 +345,7 @@ canvas{width:100%;height:auto}
   <div class="quick-add" id="quickAdd"></div>
   <div class="form-group"><label>Nome</label><input class="form-input" id="fName" placeholder="Ex: Leite Integral"></div>
   <div class="form-group"><label>Categoria</label><select class="form-input" id="fCategory"></select></div>
+  <div class="form-group"><label>Casa</label><select class="form-input" id="fHouse"></select></div>
   <div class="form-group"><label>Local</label><select class="form-input" id="fLocation"><option value="geladeira">🧊 Geladeira</option><option value="freezer">❄️ Freezer</option><option value="despensa">🏠 Despensa</option><option value="banheiro">🚿 Banheiro</option></select></div>
   <div style="display:flex;gap:10px">
     <div class="form-group" style="flex:1"><label>Quantidade</label><input class="form-input" id="fQty" type="number" value="1" min="1"></div>
@@ -675,7 +685,7 @@ function loadState(){
   try{const s=JSON.parse(localStorage.getItem('validade_state'));if(!s)return defaultState();const ds=defaultState();return{...ds,...s,stats:{...ds.stats,...(s.stats||{})},settings:{...ds.settings,...(s.settings||{})}}}catch(e){return defaultState()}
 }
 function defaultState(){
-  return {items:[],stats:{streak:0,lastNoWasteDate:null,recipesUsed:0,frozenManaged:0,totalTracked:0,moneySaved:0,moneyWasted:0,wasteLog:[]},settings:{darkMode:true,notifications:false,morningSummary:false},shareCode:null};
+  return {items:[],stats:{streak:0,lastNoWasteDate:null,recipesUsed:0,frozenManaged:0,totalTracked:0,moneySaved:0,moneyWasted:0,wasteLog:[]},settings:{darkMode:true,notifications:false,morningSummary:false},shareCode:null,houses:[{id:'casa',name:'🏠 Minha Casa'}]};
 }
 function save(){try{localStorage.setItem('validade_state',JSON.stringify(state))}catch(e){console.error('Storage error:',e);toast('⚠️ Armazenamento cheio! Exclua fotos ou itens antigos.')}if(isLoggedIn())syncToServer()}
 function uuid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,9)}
@@ -686,6 +696,33 @@ function getCatName(catId){const c=CATEGORIES.find(x=>x.id===catId);return c?c.n
 function getStatusColor(days){if(days>=999)return'green';if(days<0)return'red';if(days<=2)return'orange';if(days<=7)return'yellow';return'green'}
 function getStatusText(days){if(days>=999)return'Sem validade';if(days<0)return`Vencido há ${Math.abs(days)}d`;if(days===0)return'Vence hoje!';if(days===1)return'Vence amanhã';return`${days} dias`}
 function locName(l){return{geladeira:'🧊 Geladeira',freezer:'❄️ Freezer',despensa:'🏠 Despensa',banheiro:'🚿 Banheiro'}[l]||l}
+function getHouses(){if(!state.houses||!state.houses.length)state.houses=[{id:'casa',name:'🏠 Minha Casa'}];return state.houses}
+function renderHouseSelect(){
+  const sel=document.getElementById('fHouse');
+  sel.innerHTML=getHouses().map(h=>`<option value="${h.id}">${esc(h.name)}</option>`).join('');
+}
+function renderHousesList(){
+  const el=document.getElementById('housesList');if(!el)return;
+  el.innerHTML=getHouses().map((h,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;${i>0?'border-top:1px solid var(--bg3)':''}"><span style="font-size:14px">${esc(h.name)}</span>${state.houses.length>1?`<button style="background:none;border:none;color:var(--red);font-size:18px;cursor:pointer" onclick="removeHouse('${h.id}')">×</button>`:''}</div>`).join('');
+}
+function addHouse(){
+  const input=document.getElementById('newHouseName');
+  const name=input.value.trim();if(!name){toast('❌ Digite o nome da casa');return}
+  const id=name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-');
+  if(state.houses.find(h=>h.id===id)){toast('❌ Essa casa já existe');return}
+  state.houses.push({id,name});
+  save();input.value='';renderHousesList();renderHouseSelect();
+  toast('🏠 '+name+' adicionada!');
+}
+function removeHouse(id){
+  if(state.houses.length<=1){toast('❌ Precisa ter pelo menos uma casa');return}
+  state.houses=state.houses.filter(h=>h.id!==id);
+  // Move items from removed house to first house
+  state.items.forEach(i=>{if(i.house===id)i.house=state.houses[0].id});
+  save();renderHousesList();renderHouseSelect();renderItems();
+  toast('🗑️ Casa removida');
+}
+function getHouseName(id){const h=getHouses().find(x=>x.id===id);return h?h.name:'🏠 Casa'}
 function freezerMaxDate(item){
   if(!item.frozenDate)return null;
   // Check if AI already calculated
@@ -1126,7 +1163,7 @@ function renderItems(){
       <div class="item-bg right">🗑️ Deletar</div>
       <div class="item-content">
         <span class="item-emoji">${getCatEmoji(item.category)}</span>
-        <div class="item-info"><h4>${esc(item.name)}</h4><p>${item.quantity}${esc(item.unit)} · ${locName(item.location)}</p></div>
+        <div class="item-info"><h4>${esc(item.name)}</h4><p>${item.quantity}${esc(item.unit)} · ${locName(item.location)}${item.house&&state.houses&&state.houses.length>1?' · '+getHouseName(item.house):''}</p></div>
         <span class="item-badge ${color}">${d}</span>
       </div>
     </div>`;
@@ -1170,7 +1207,9 @@ function openAddModal(presetData){
   document.getElementById('fId').value='';
   document.getElementById('fName').value=presetData?.name||'';
   renderCategorySelect();
+  renderHouseSelect();
   document.getElementById('fCategory').value=presetData?.cat||'laticinios';
+  document.getElementById('fHouse').value=getHouses()[0]?.id||'casa';
   document.getElementById('fLocation').value='geladeira';
   document.getElementById('fQty').value=1;
   document.getElementById('fUnit').value='un';
@@ -1213,6 +1252,7 @@ function saveItem(){
   const item={
     id:id||uuid(),name,
     category:document.getElementById('fCategory').value,
+    house:document.getElementById('fHouse').value,
     location:loc,
     quantity:parseFloat(document.getElementById('fQty').value)||1,
     unit:document.getElementById('fUnit').value,
@@ -1373,7 +1413,9 @@ function editFromDetail(){
   document.getElementById('fId').value=item.id;
   document.getElementById('fName').value=item.name;
   renderCategorySelect();
+  renderHouseSelect();
   document.getElementById('fCategory').value=item.category;
+  document.getElementById('fHouse').value=item.house||getHouses()[0]?.id||'casa';
   document.getElementById('fLocation').value=item.location;
   document.getElementById('fQty').value=item.quantity;
   document.getElementById('fUnit').value=item.unit;
@@ -1508,6 +1550,7 @@ function renderConfig(){
   document.getElementById('notifToggle').classList.toggle('on',state.settings.notifications);
   document.getElementById('morningToggle').classList.toggle('on',state.settings.morningSummary);
   if(state.shareCode)document.getElementById('shareCode').textContent=state.shareCode;
+  renderHousesList();
   // Account info
   const user=getUser();
   const ai=document.getElementById('accountInfo');
