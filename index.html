@@ -448,15 +448,20 @@ canvas{width:100%;height:auto}
 
 <script>
 // ===== GEMINI API =====
-const GEMINI_KEY='AIzaSyBnqalI_0KRLZK7ccZ8_vaQSpvhLU_tP5k';
-const GEMINI_URL=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
-
 // AI cache to avoid repeated calls
 const aiCache={recipes:null,recipesCacheKey:null,tips:null,tipsCacheDate:null};
 
 async function callGemini(parts,maxTokens=1024){
   try{
     const body={contents:[{parts}],generationConfig:{maxOutputTokens:maxTokens,temperature:0.7}};
+    // Use server proxy when available (keeps API key server-side)
+    const token=getToken();
+    if(API_URL!==undefined&&token){
+      const resp=await fetch(API_URL+'/api/gemini',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(body)});
+      if(resp.ok){const data=await resp.json();return data.candidates?.[0]?.content?.parts?.[0]?.text||null}
+    }
+    // Fallback: direct call (GitHub Pages without backend)
+    const GEMINI_URL='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBnqalI_0KRLZK7ccZ8_vaQSpvhLU_tP5k';
     const resp=await fetch(GEMINI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!resp.ok)throw new Error(`API ${resp.status}`);
     const data=await resp.json();

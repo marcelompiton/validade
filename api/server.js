@@ -130,6 +130,27 @@ app.get('/api/items', authMiddleware, (req, res) => {
   res.json({ data: row ? JSON.parse(row.data) : null });
 });
 
+// Gemini AI proxy — keeps API key server-side
+const GEMINI_KEY = process.env.GEMINI_KEY || 'AIzaSyBnqalI_0KRLZK7ccZ8_vaQSpvhLU_tP5k';
+app.post('/api/gemini', authMiddleware, async (req, res) => {
+  if (rateLimit(req.ip, 20, 60000)) return res.status(429).json({ error: 'Rate limit exceeded' });
+  try {
+    const { contents, generationConfig } = req.body;
+    if (!contents) return res.status(400).json({ error: 'contents required' });
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents, generationConfig })
+    });
+    const data = await resp.json();
+    res.json(data);
+  } catch (e) {
+    console.error('Gemini proxy error:', e);
+    res.status(500).json({ error: 'AI service error' });
+  }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Validade API running on port ${PORT}`);
 });
