@@ -1,0 +1,4 @@
+api/node_modules/
+api/validade.db
+api/validade.db-wal
+api/validade.db-shm

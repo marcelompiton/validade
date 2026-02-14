@@ -570,11 +570,15 @@ const BADGES = [
 
 // ===== AUTH & PAYWALL =====
 const FREE_LIMIT=3;
-const PREMIUM_URL='#'; // Link de pagamento (será atualizado)
+const API_URL='http://147.93.35.228:3457';
 const PREMIUM_PRICE='R$ 4,99/mês';
+const PREMIUM_URL='#'; // Link de pagamento
+
 function getUser(){try{return JSON.parse(localStorage.getItem('validade_user'))}catch(e){return null}}
-function setUser(u){localStorage.setItem('validade_user',JSON.stringify(u))}
-function isLoggedIn(){return !!getUser()}
+function getToken(){return localStorage.getItem('validade_token')}
+function setAuth(token,user){localStorage.setItem('validade_token',token);localStorage.setItem('validade_user',JSON.stringify(user))}
+function clearAuth(){localStorage.removeItem('validade_token');localStorage.removeItem('validade_user')}
+function isLoggedIn(){return !!getToken()&&!!getUser()}
 function isPremium(){const u=getUser();return u&&u.premium===true}
 function canAddItem(){
   if(isPremium())return true;
@@ -586,46 +590,74 @@ function requireAuth(){
   if(!canAddItem()){showPaywall();return true}
   return false;
 }
-function showAuthScreen(){
-  document.getElementById('authModal').classList.add('active');
-  showRegister();
-}
+function showAuthScreen(){document.getElementById('authModal').classList.add('active');showRegister()}
 function showLogin(){document.getElementById('authLogin').style.display='block';document.getElementById('authRegister').style.display='none'}
 function showRegister(){document.getElementById('authLogin').style.display='none';document.getElementById('authRegister').style.display='block'}
 function showPaywall(){openModal('paywallModal')}
-function doLogin(){
+
+async function doLogin(){
   const email=document.getElementById('authEmail').value.trim();
   const pass=document.getElementById('authPass').value.trim();
   if(!email||!pass){toast('❌ Preencha e-mail e senha');return}
-  const accounts=JSON.parse(localStorage.getItem('validade_accounts')||'[]');
-  const acc=accounts.find(a=>a.email===email&&a.pass===pass);
-  if(!acc){toast('❌ E-mail ou senha incorretos');return}
-  setUser(acc);
-  closeModal('authModal');
-  toast('✅ Bem-vindo, '+acc.name+'!');
-  renderHome();
+  const btn=document.querySelector('#authLogin .btn-primary');
+  btn.textContent='Entrando...';btn.disabled=true;
+  try{
+    const r=await fetch(API_URL+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    const data=await r.json();
+    if(!r.ok){toast('❌ '+(data.error||'Erro ao logar'));return}
+    setAuth(data.token,data.user);
+    closeModal('authModal');
+    toast('✅ Bem-vindo, '+data.user.name+'!');
+    await syncFromServer();
+    renderHome();
+  }catch(e){toast('❌ Erro de conexão')}
+  finally{btn.textContent='Entrar';btn.disabled=false}
 }
-function doRegister(){
+
+async function doRegister(){
   const name=document.getElementById('regName').value.trim();
   const email=document.getElementById('regEmail').value.trim();
   const phone=document.getElementById('regPhone').value.trim();
   const pass=document.getElementById('regPass').value.trim();
   if(!name||!email||!phone||!pass){toast('❌ Preencha todos os campos');return}
   if(!email.includes('@')){toast('❌ E-mail inválido');return}
-  const accounts=JSON.parse(localStorage.getItem('validade_accounts')||'[]');
-  if(accounts.find(a=>a.email===email)){toast('❌ E-mail já cadastrado');return}
-  const acc={name,email,phone,pass,premium:false,createdAt:new Date().toISOString()};
-  accounts.push(acc);
-  localStorage.setItem('validade_accounts',JSON.stringify(accounts));
-  setUser(acc);
-  closeModal('authModal');
-  toast('✅ Cadastro realizado! Bem-vindo, '+name+'!');
-  renderHome();
+  const btn=document.querySelector('#authRegister .btn-primary');
+  btn.textContent='Cadastrando...';btn.disabled=true;
+  try{
+    const r=await fetch(API_URL+'/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,phone,password:pass})});
+    const data=await r.json();
+    if(!r.ok){toast('❌ '+(data.error||'Erro ao cadastrar'));return}
+    setAuth(data.token,data.user);
+    closeModal('authModal');
+    toast('✅ Cadastro realizado! Bem-vindo, '+name+'!');
+    renderHome();
+  }catch(e){toast('❌ Erro de conexão')}
+  finally{btn.textContent='Cadastrar Grátis';btn.disabled=false}
 }
-function doLogout(){
-  localStorage.removeItem('validade_user');
-  toast('👋 Até logo!');
-  showAuthScreen();
+
+function doLogout(){clearAuth();toast('👋 Até logo!');showAuthScreen()}
+
+// Sync to server (after adding/removing items)
+async function syncToServer(){
+  const token=getToken();if(!token)return;
+  try{
+    await fetch(API_URL+'/api/items',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({data:{items:state.items.map(i=>({...i,photo:null})),stats:state.stats,settings:state.settings}})});
+  }catch(e){console.error('Sync error:',e)}
+}
+
+// Sync from server (on login)
+async function syncFromServer(){
+  const token=getToken();if(!token)return;
+  try{
+    const r=await fetch(API_URL+'/api/items',{headers:{'Authorization':'Bearer '+token}});
+    const {data}=await r.json();
+    if(data&&data.items&&data.items.length){
+      state.items=data.items;
+      if(data.stats)state.stats={...state.stats,...data.stats};
+      if(data.settings)state.settings={...state.settings,...data.settings};
+      save();
+    }
+  }catch(e){console.error('Sync load error:',e)}
 }
 
 // ===== STATE =====
@@ -637,7 +669,7 @@ function loadState(){
 function defaultState(){
   return {items:[],stats:{streak:0,lastNoWasteDate:null,recipesUsed:0,frozenManaged:0,totalTracked:0,moneySaved:0,moneyWasted:0,wasteLog:[]},settings:{darkMode:true,notifications:false,morningSummary:false},shareCode:null};
 }
-function save(){try{localStorage.setItem('validade_state',JSON.stringify(state))}catch(e){console.error('Storage error:',e);toast('⚠️ Armazenamento cheio! Exclua fotos ou itens antigos.')}}
+function save(){try{localStorage.setItem('validade_state',JSON.stringify(state))}catch(e){console.error('Storage error:',e);toast('⚠️ Armazenamento cheio! Exclua fotos ou itens antigos.')}if(isLoggedIn())syncToServer()}
 function uuid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,9)}
 function today(){return new Date().toISOString().split('T')[0]}
 function daysUntil(d){if(!d||d==='undefined'||d==='null')return 999;const t=new Date(d+'T23:59:59');if(isNaN(t))return 999;return Math.ceil((t-new Date())/(864e5))}
