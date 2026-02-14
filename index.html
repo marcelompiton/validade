@@ -11,7 +11,7 @@
 <style>
 :root{--bg:#0f0f1a;--bg2:#1a1a2e;--bg3:#252540;--text:#e8e8f0;--text2:#9999b0;--accent:#6c5ce7;--accent2:#a855f7;--green:#00b894;--yellow:#fdcb6e;--orange:#e17055;--red:#d63031;--card:#1e1e35;--radius:16px;--shadow:0 4px 20px rgba(0,0,0,.3);--transition:.3s cubic-bezier(.4,0,.2,1)}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;padding-bottom:80px;transition:background var(--transition),color var(--transition)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;padding-bottom:130px;transition:background var(--transition),color var(--transition)}
 body.light{--bg:#f5f5ff;--bg2:#eeeef8;--bg3:#e0e0ee;--text:#1a1a2e;--text2:#666680;--card:#fff;--shadow:0 4px 20px rgba(0,0,0,.08)}
 
 ::-webkit-scrollbar{width:4px}
@@ -204,7 +204,7 @@ canvas{width:100%;height:auto}
 <div id="toast" class="toast"></div>
 
 <header class="header">
-  <h1>🥦 Validade</h1>
+  <div><h1>🥦 Validade</h1><p style="font-size:11px;color:var(--text2);margin-top:2px">Controle a validade dos seus alimentos com inteligência artificial</p></div>
   <div class="header-actions">
     <button class="header-btn" onclick="showNotifSummary()" title="Notificações">🔔</button>
     <button class="header-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
@@ -308,6 +308,9 @@ canvas{width:100%;height:auto}
   </div>
   <input type="file" id="homePhotoInput" accept="image/*" capture="environment" style="display:none" onchange="handleHomePhoto(event)">
 </div>
+
+<!-- FAB -->
+<button class="fab" onclick="openAddModal()">+</button>
 
 <!-- Bottom Nav -->
 <nav class="bottom-nav">
@@ -729,7 +732,7 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
 function openModal(id){document.getElementById(id).classList.add('active')}
 function closeModal(id){document.getElementById(id).classList.remove('active')}
 document.querySelectorAll('.modal-overlay').forEach(m=>{
-  m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id)});
+  m.addEventListener('click',e=>{if(e.target===m&&m.id!=='authModal')closeModal(m.id)});
 });
 
 // ===== AI FEATURE 1: PHOTO RECOGNITION =====
@@ -800,7 +803,7 @@ function addAllPhotoItems(){
     state.items.push({
       id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),
       name:p.name,category:validCat,location:loc,
-      qty:1,unit:'un',expiryDate:dt.toISOString().split('T')[0],
+      quantity:1,unit:'un',expiryDate:dt.toISOString().split('T')[0],
       addedDate:today(),photo:photoSrc,price:parseFloat(p.estimatedPrice)||0,
       notes:'',status:'active',frozenDate:null
     });
