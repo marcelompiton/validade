@@ -778,15 +778,9 @@ function renderHome(){
   if(exp3.length) alerts+=`<div class="alert-card yellow"><span class="alert-icon">📅</span><div class="alert-info"><h3>${exp3.length} item(ns) nos próximos 3 dias</h3><p>${exp3.map(i=>esc(i.name)).join(', ')}</p></div><span class="alert-count">${exp3.length}</span></div>`;
   document.getElementById('alerts-section').innerHTML=alerts;
 
-  // Seasonal tip (cached to avoid flicker)
-  const month=new Date().getMonth();
-  const tips=SEASONAL_TIPS[month]||[];
-  if(!window._cachedSeasonalTip)window._cachedSeasonalTip=tips[Math.floor(Math.random()*tips.length)]||'';
-  const tip=window._cachedSeasonalTip;
-  document.getElementById('tip-section').innerHTML=tip?`<div class="tip-card"><span class="tip-icon">🌡️</span>${tip}</div>`:'';
+  // Tips section: 5 tips (seasonal + AI generated, cached)
+  renderAllTips();
 
-  // AI Smart Tips (async, non-blocking)
-  renderAiTips();
 
   // Recipe suggestion (static + AI)
   const expiringSoon=items.filter(i=>i.status==='active'&&daysUntil(i.expiryDate)<=3&&daysUntil(i.expiryDate)>=0);
@@ -805,13 +799,43 @@ function renderHome(){
   if(items.length===0){document.getElementById('streak-section').innerHTML='';document.getElementById('waste-summary').innerHTML=''}
 }
 
-async function renderAiTips(){
-  const section=document.getElementById('ai-tip-section');
-  // Only fetch if we have some data
-  if(state.items.length<3){section.innerHTML='';return}
-  const tips=await aiGetSmartTips();
-  if(!tips||!tips.length){section.innerHTML='';return}
-  section.innerHTML=tips.map(t=>`<div class="ai-tip-card"><div class="ai-tip-header">${esc(t.emoji||'🧠')} Dica da IA <span class="ai-badge">IA</span></div>${esc(t.tip)}</div>`).join('');
+async function renderAllTips(){
+  const tipSection=document.getElementById('tip-section');
+  const aiSection=document.getElementById('ai-tip-section');
+
+  // Start with seasonal tips
+  const month=new Date().getMonth();
+  const seasonal=SEASONAL_TIPS[month]||[];
+  const monthNames=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  // Check cache (refresh every 6 hours)
+  const cacheKey='validade_tips_cache';
+  const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');
+  const sixHours=6*60*60*1000;
+  if(cached&&(Date.now()-cached.ts)<sixHours){
+    tipSection.innerHTML=cached.tips.map(t=>`<div class="tip-card"><span class="tip-icon">${t.icon}</span>${esc(t.text)}</div>`).join('');
+    aiSection.innerHTML='';
+    return;
+  }
+
+  // Show seasonal while loading AI tips
+  tipSection.innerHTML=seasonal.map(t=>`<div class="tip-card"><span class="tip-icon">🌡️</span>${t}</div>`).join('');
+  aiSection.innerHTML='';
+
+  // Fetch 5 tips from AI
+  const itemNames=state.items.filter(i=>i.status==='active').map(i=>i.name).slice(0,15);
+  const context=itemNames.length?`Itens na despensa: ${itemNames.join(', ')}.`:'Despensa vazia.';
+  const prompt=`Gere exatamente 5 dicas curtas e variadas sobre conservação de alimentos, aproveitamento e redução de desperdício. Mês atual: ${monthNames[month]}. ${context} Responda APENAS em JSON válido: [{"icon":"emoji","text":"dica curta"},...]. Cada dica com no máximo 80 caracteres. Varie entre: sazonalidade, conservação, economia, receitas rápidas, organização.`;
+
+  try{
+    const result=await callGemini([{text:prompt}],512);
+    const parsed=extractJSON(result);
+    if(Array.isArray(parsed)&&parsed.length>=3){
+      const tips=parsed.slice(0,5);
+      tipSection.innerHTML=tips.map(t=>`<div class="tip-card"><span class="tip-icon">${t.icon||'💡'}</span>${esc(t.text)}</div>`).join('');
+      localStorage.setItem(cacheKey,JSON.stringify({ts:Date.now(),tips}));
+    }
+  }catch(e){console.error('Tips AI error:',e)}
 }
 
 function findRecipe(expiringItems){
