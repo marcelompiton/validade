@@ -284,6 +284,13 @@ canvas{width:100%;height:auto}
     <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Compartilhe sua despensa com familiares</p>
     <div class="share-code" id="shareCode">------</div>
     <button class="btn btn-primary" style="margin-top:12px" onclick="generateShareCode()">Gerar Código</button>
+    <div style="border-top:1px solid var(--bg3);margin-top:16px;padding-top:16px">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:8px">Recebeu um código? Cole aqui para sincronizar:</p>
+      <div style="display:flex;gap:8px">
+        <input class="form-input" id="importCodeInput" placeholder="Ex: A3F7K2" style="flex:1;text-transform:uppercase;letter-spacing:4px;font-weight:700;text-align:center">
+        <button class="btn btn-primary" onclick="importShareCode()" style="white-space:nowrap">Importar</button>
+      </div>
+    </div>
   </div>
   <div class="section-title">💾 Dados</div>
   <div class="config-item" onclick="exportBackup()" style="cursor:pointer">
@@ -1271,10 +1278,49 @@ function showMorningSummaryConfig(){
 }
 
 function generateShareCode(){
-  const code=Math.random().toString().slice(2,8);
+  // Encode items as base64 in a shareable URL
+  const data={items:state.items,stats:state.stats};
+  const json=JSON.stringify(data);
+  const b64=btoa(unescape(encodeURIComponent(json)));
+  const url=location.origin+location.pathname+'?import='+b64;
+  // Also generate short display code
+  const code=Math.random().toString(36).slice(2,8).toUpperCase();
   state.shareCode=code;save();
   document.getElementById('shareCode').textContent=code;
-  toast('🔗 Código gerado: '+code);
+  // Copy shareable link
+  if(navigator.share){
+    navigator.share({title:'Minha Despensa - Validade',text:'Importe minha despensa no app Validade!',url}).catch(()=>{});
+  }else{
+    navigator.clipboard.writeText(url).then(()=>toast('🔗 Link copiado! Envie para quem quiser importar.')).catch(()=>toast('🔗 Código: '+code));
+  }
+}
+function importShareCode(){
+  const input=document.getElementById('importCodeInput').value.trim();
+  if(!input){toast('❌ Cole o link ou código');return}
+  // If it's a full URL with ?import=
+  let b64=input;
+  if(input.includes('?import=')){b64=input.split('?import=')[1]}
+  try{
+    const json=decodeURIComponent(escape(atob(b64)));
+    const data=JSON.parse(json);
+    if(data.items&&Array.isArray(data.items)){
+      const count=data.items.length;
+      // Merge: add items that don't exist by name
+      const existingNames=new Set(state.items.map(i=>i.name.toLowerCase()));
+      let added=0;
+      data.items.forEach(item=>{
+        if(!existingNames.has(item.name.toLowerCase())){
+          item.id=Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+          state.items.push(item);
+          existingNames.add(item.name.toLowerCase());
+          added++;
+        }
+      });
+      save();renderHome();renderItems();
+      toast(`📥 ${added} itens importados de ${count}!`);
+      document.getElementById('importCodeInput').value='';
+    }else{toast('❌ Dados inválidos')}
+  }catch(e){toast('❌ Código inválido. Cole o link completo que recebeu.')}
 }
 
 function showNotifSummary(){
@@ -1347,9 +1393,34 @@ function checkNotifications(){
 }
 
 // ===== INIT =====
+function checkUrlImport(){
+  const params=new URLSearchParams(location.search);
+  const b64=params.get('import');
+  if(!b64)return;
+  try{
+    const json=decodeURIComponent(escape(atob(b64)));
+    const data=JSON.parse(json);
+    if(data.items&&Array.isArray(data.items)){
+      const existingNames=new Set(state.items.map(i=>i.name.toLowerCase()));
+      let added=0;
+      data.items.forEach(item=>{
+        if(!existingNames.has(item.name.toLowerCase())){
+          item.id=Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+          state.items.push(item);
+          existingNames.add(item.name.toLowerCase());
+          added++;
+        }
+      });
+      save();
+      toast(`📥 ${added} itens importados!`);
+      history.replaceState(null,'',location.pathname);
+    }
+  }catch(e){console.error('Import error:',e)}
+}
 function init(){
   document.body.classList.toggle('light',!state.settings.darkMode);
   document.getElementById('themeBtn').textContent=state.settings.darkMode?'🌙':'☀️';
+  checkUrlImport();
   renderHome();
   checkNotifications();
   setInterval(checkNotifications,3600000);
