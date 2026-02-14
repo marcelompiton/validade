@@ -177,13 +177,18 @@ canvas{width:100%;height:auto}
 .ai-loading .ai-spinner{display:inline-block;animation:sparkle 1s infinite;margin-right:6px}
 
 /* AI NL Input */
-.nl-input-wrap{position:relative;margin-bottom:16px}
-.nl-input-wrap textarea{width:100%;padding:16px 50px 16px 16px;background:var(--bg3);border:2px solid transparent;border-radius:16px;color:var(--text);font-size:15px;outline:none;resize:none;height:72px;font-family:inherit;transition:var(--transition);line-height:1.4}
-.nl-input-wrap textarea:focus{border-color:var(--accent);height:100px}
-.nl-input-wrap textarea::placeholder{color:var(--text2)}
-.nl-input-label{font-size:13px;color:var(--text2);margin-bottom:8px;line-height:1.5}
-.nl-input-label strong{color:var(--text);font-weight:600}
-.nl-send-btn{position:absolute;right:10px;bottom:10px;width:38px;height:38px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
+.ai-box{background:var(--bg2);border:1.5px solid var(--bg3);border-radius:16px;padding:16px;margin-bottom:16px}
+.ai-box-header{font-size:15px;margin-bottom:4px}
+.ai-box-header strong{color:var(--text)}
+.ai-box-desc{font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.4}
+.ai-box-input{position:relative}
+.ai-box-input textarea{width:100%;padding:14px 16px 50px 16px;background:var(--bg3);border:2px solid transparent;border-radius:12px;color:var(--text);font-size:15px;outline:none;resize:none;height:90px;font-family:inherit;transition:var(--transition);line-height:1.4}
+.ai-box-input textarea:focus{border-color:var(--accent);height:110px}
+.ai-box-input textarea::placeholder{color:var(--text2)}
+.ai-box-actions{position:absolute;right:10px;bottom:10px;display:flex;gap:8px;align-items:center}
+.ai-box-photo{width:38px;height:38px;border:none;border-radius:10px;background:var(--bg2);color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
+.ai-box-photo:active{transform:scale(.85);color:var(--accent)}
+.nl-send-btn{width:38px;height:38px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
 .nl-send-btn:active{transform:scale(.85)}
 
 /* AI Tip Card */
@@ -212,11 +217,18 @@ canvas{width:100%;height:auto}
 <!-- HOME PAGE -->
 <div id="page-home" class="page active">
   <div id="streak-section"></div>
-  <!-- AI Natural Language Add -->
-  <div class="nl-input-label">🤖 <strong>Assistente IA</strong> — descreva o que comprou e a IA cadastra pra você. Ex: nome, quantidade, validade, onde guardar.</div>
-  <div class="nl-input-wrap">
-    <textarea id="nlInput" placeholder="Ex: 2 litros de leite, vence dia 20, na geladeira" rows="2"></textarea>
-    <button class="nl-send-btn" onclick="processNaturalLanguage()">➤</button>
+  <!-- AI Assistant Box -->
+  <div class="ai-box">
+    <div class="ai-box-header">🤖 <strong>Assistente IA</strong></div>
+    <div class="ai-box-desc">Descreva o que comprou ou tire uma foto — a IA preenche tudo pra você.</div>
+    <div class="ai-box-input">
+      <textarea id="nlInput" placeholder="Ex: 2 litros de leite, vence dia 20, na geladeira" rows="3"></textarea>
+      <div class="ai-box-actions">
+        <button class="ai-box-photo" onclick="homePhoto()">📷</button>
+        <button class="nl-send-btn" onclick="processNaturalLanguage()">➤</button>
+      </div>
+    </div>
+    <input type="file" id="homePhotoInput" accept="image/*" capture="environment" style="display:none" onchange="handleHomePhoto(event)">
   </div>
   <div id="nlResult"></div>
   <div id="alerts-section"></div>
@@ -962,6 +974,30 @@ function saveItem(){
 }
 
 // Photo with AI recognition
+function homePhoto(){document.getElementById('homePhotoInput').value='';document.getElementById('homePhotoInput').click()}
+function handleHomePhoto(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    const base64=ev.target.result;
+    const img=new Image();
+    img.onload=async function(){
+      const maxW=800;const scale=img.width>maxW?maxW/img.width:1;
+      const c=document.createElement('canvas');c.width=img.width*scale;c.height=img.height*scale;
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      const compressed=c.toDataURL('image/jpeg',0.6);
+      // Open add modal first
+      openAdd();
+      document.getElementById('photoPreview').src=compressed;
+      document.getElementById('photoPreview').style.display='block';
+      window._photoCompressed=compressed;
+      // Run AI recognition with original quality
+      aiRecognizePhoto(base64);
+    };
+    img.src=base64;
+  };
+  reader.readAsDataURL(file);
+}
 function capturePhoto(){document.getElementById('photoInput').value='';document.getElementById('photoInput').click()}
 function handlePhoto(e){
   const file=e.target.files[0];if(!file)return;
