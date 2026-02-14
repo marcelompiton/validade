@@ -9,7 +9,28 @@ const app = express();
 const PORT = 3457;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
+
+// Basic rate limiting for auth endpoints
+const authAttempts = new Map();
+function rateLimit(ip, maxAttempts = 10, windowMs = 60000) {
+  const now = Date.now();
+  const entry = authAttempts.get(ip);
+  if (!entry || now - entry.start > windowMs) {
+    authAttempts.set(ip, { start: now, count: 1 });
+    return false;
+  }
+  entry.count++;
+  if (entry.count > maxAttempts) return true;
+  return false;
+}
+// Clean up old entries every 5 min
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of authAttempts) {
+    if (now - entry.start > 300000) authAttempts.delete(ip);
+  }
+}, 300000);
 
 // Serve frontend
 app.use(express.static(path.join(__dirname, '..')));
@@ -51,8 +72,10 @@ function authMiddleware(req, res, next) {
 
 // Register
 app.post('/api/register', (req, res) => {
+  if (rateLimit(req.ip, 5)) return res.status(429).json({ error: 'Too many attempts. Try again later.' });
   const { name, email, phone, password } = req.body;
   if (!name || !email || !phone || !password) return res.status(400).json({ error: 'All fields required' });
+  if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
   
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase());
   if (existing) return res.status(409).json({ error: 'Email already registered' });
@@ -67,6 +90,7 @@ app.post('/api/register', (req, res) => {
 
 // Login
 app.post('/api/login', (req, res) => {
+  if (rateLimit(req.ip, 10)) return res.status(429).json({ error: 'Too many attempts. Try again later.' });
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
