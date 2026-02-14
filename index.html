@@ -589,10 +589,10 @@ async function aiRecognizePhoto(base64Data){
         <p>📅 Validade típica: ~${parseInt(parsed.typicalShelfLifeDays)||7} dias</p>
         <p>📍 Local sugerido: ${locName(parsed.suggestedLocation||'geladeira')}</p>
         ${priceStr?`<p>💰 Preço estimado: R$ ${priceStr}</p>`:''}
-        <button class="ai-apply-btn" onclick="applyAiPhoto()">✅ Aplicar Dados</button>
       </div>`;
-    // Store for apply
+    // Auto-apply data to form
     window._aiPhotoData=parsed;
+    applyAiPhoto();
   }else{
     document.getElementById('aiPhotoResult').innerHTML='<div class="ai-photo-result"><p>❌ Não foi possível identificar. Preencha manualmente.</p></div>';
   }
