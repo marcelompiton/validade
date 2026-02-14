@@ -987,7 +987,7 @@ function handleHomePhoto(e){
       c.getContext('2d').drawImage(img,0,0,c.width,c.height);
       const compressed=c.toDataURL('image/jpeg',0.6);
       // Open add modal first
-      openAdd();
+      openAddModal();
       document.getElementById('photoPreview').src=compressed;
       document.getElementById('photoPreview').style.display='block';
       window._photoCompressed=compressed;
