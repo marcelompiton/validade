@@ -178,10 +178,12 @@ canvas{width:100%;height:auto}
 
 /* AI NL Input */
 .nl-input-wrap{position:relative;margin-bottom:16px}
-.nl-input-wrap textarea{width:100%;padding:14px 50px 14px 16px;background:var(--bg3);border:2px solid transparent;border-radius:12px;color:var(--text);font-size:14px;outline:none;resize:none;height:48px;font-family:inherit;transition:var(--transition)}
-.nl-input-wrap textarea:focus{border-color:var(--accent);height:80px}
+.nl-input-wrap textarea{width:100%;padding:16px 50px 16px 16px;background:var(--bg3);border:2px solid transparent;border-radius:16px;color:var(--text);font-size:15px;outline:none;resize:none;height:72px;font-family:inherit;transition:var(--transition);line-height:1.4}
+.nl-input-wrap textarea:focus{border-color:var(--accent);height:100px}
 .nl-input-wrap textarea::placeholder{color:var(--text2)}
-.nl-send-btn{position:absolute;right:8px;top:8px;width:34px;height:34px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
+.nl-input-label{font-size:13px;color:var(--text2);margin-bottom:8px;line-height:1.5}
+.nl-input-label strong{color:var(--text);font-weight:600}
+.nl-send-btn{position:absolute;right:10px;bottom:10px;width:38px;height:38px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
 .nl-send-btn:active{transform:scale(.85)}
 
 /* AI Tip Card */
@@ -211,8 +213,9 @@ canvas{width:100%;height:auto}
 <div id="page-home" class="page active">
   <div id="streak-section"></div>
   <!-- AI Natural Language Add -->
+  <div class="nl-input-label">🤖 <strong>Assistente IA</strong> — descreva o que comprou e a IA cadastra pra você. Ex: nome, quantidade, validade, onde guardar.</div>
   <div class="nl-input-wrap">
-    <textarea id="nlInput" placeholder="✨ Digite naturalmente: &quot;comprei 2L de leite, vence dia 20&quot;" rows="1"></textarea>
+    <textarea id="nlInput" placeholder="Ex: 2 litros de leite, vence dia 20, na geladeira" rows="2"></textarea>
     <button class="nl-send-btn" onclick="processNaturalLanguage()">➤</button>
   </div>
   <div id="nlResult"></div>
