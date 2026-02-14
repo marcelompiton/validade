@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
 <title>Validade</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 :root{--bg:#0f0f1a;--bg2:#1a1a2e;--bg3:#252540;--text:#e8e8f0;--text2:#9999b0;--accent:#6c5ce7;--accent2:#a855f7;--green:#00b894;--yellow:#fdcb6e;--orange:#e17055;--red:#d63031;--card:#1e1e35;--radius:16px;--shadow:0 4px 20px rgba(0,0,0,.3);--transition:.3s cubic-bezier(.4,0,.2,1)}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -198,6 +199,33 @@ canvas{width:100%;height:auto}
 .ai-photo-result p{font-size:12px;color:var(--text2);margin:2px 0}
 .ai-photo-result .ai-apply-btn{margin-top:8px;padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;transition:var(--transition)}
 .ai-photo-result .ai-apply-btn:active{transform:scale(.95)}
+
+/* Barcode Scanner */
+.barcode-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:250;display:none;align-items:center;justify-content:center;flex-direction:column}
+.barcode-modal-overlay.active{display:flex}
+.barcode-header{color:#fff;font-size:16px;font-weight:700;margin-bottom:12px;text-align:center}
+.barcode-header p{font-size:12px;color:rgba(255,255,255,.6);margin-top:4px}
+#barcode-reader{width:min(90vw,400px);border-radius:16px;overflow:hidden}
+.barcode-close{margin-top:16px;padding:12px 32px;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer}
+.barcode-close:active{transform:scale(.95)}
+.ai-box-barcode{width:38px;height:38px;border:none;border-radius:10px;background:var(--bg2);color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
+.ai-box-barcode:active{transform:scale(.85);color:var(--accent)}
+
+/* Nutrition Info */
+.nutrition-section{background:linear-gradient(135deg,rgba(0,184,148,.1),rgba(0,184,148,.04));border:1px solid rgba(0,184,148,.15);border-radius:12px;padding:14px;margin-bottom:16px;display:none}
+.nutrition-section.visible{display:block}
+.nutrition-section h4{font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.nutrition-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.nutrition-item{background:var(--bg3);border-radius:8px;padding:10px;text-align:center}
+.nutrition-item .nut-value{font-size:18px;font-weight:800;color:var(--green)}
+.nutrition-item .nut-label{font-size:10px;color:var(--text2);margin-top:2px}
+
+/* Barcode product card */
+.barcode-product-card{background:linear-gradient(135deg,rgba(108,92,231,.12),rgba(0,184,148,.08));border:1px solid rgba(108,92,231,.2);border-radius:12px;padding:16px;margin-bottom:12px}
+.barcode-product-card img{width:80px;height:80px;object-fit:contain;border-radius:8px;background:#fff;float:right;margin-left:12px}
+.barcode-product-card h3{font-size:15px;margin-bottom:4px}
+.barcode-product-card .brand{font-size:12px;color:var(--text2);margin-bottom:8px}
+.barcode-product-card .categories{font-size:11px;color:var(--accent2);margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -309,13 +337,21 @@ canvas{width:100%;height:auto}
 <!-- AI Chat Bar (fixed above bottom nav) -->
 <div class="ai-chat-bar">
   <div class="ai-box-input">
-    <textarea id="nlInput" placeholder="Descreva o que comprou ou tire uma foto 📷" rows="1"></textarea>
+    <textarea id="nlInput" placeholder="Descreva o que comprou, tire foto 📷 ou escaneie o código de barras" rows="1"></textarea>
     <div class="ai-box-actions">
+      <button class="ai-box-barcode" onclick="startBarcodeScan()" title="Escanear código de barras">⊟</button>
       <button class="ai-box-photo" onclick="homePhoto()">📷</button>
       <button class="nl-send-btn" onclick="processNaturalLanguage()">➤</button>
     </div>
   </div>
   <input type="file" id="homePhotoInput" accept="image/*" capture="environment" style="display:none" onchange="handleHomePhoto(event)">
+</div>
+
+<!-- Barcode Scanner Overlay -->
+<div class="barcode-modal-overlay" id="barcodeOverlay">
+  <div class="barcode-header">⊟ Escaneie o Código de Barras<p>Aponte a câmera para o código de barras do produto</p></div>
+  <div id="barcode-reader"></div>
+  <button class="barcode-close" onclick="stopBarcodeScan()">✕ Fechar</button>
 </div>
 
 <!-- FAB -->
@@ -335,8 +371,11 @@ canvas{width:100%;height:auto}
   <div class="modal-handle"></div>
   <h2 id="modalTitle">Adicionar Item</h2>
   <div class="form-group">
-    <label>📸 Foto <span class="ai-badge">IA</span></label>
-    <button class="photo-btn" id="photoBtn" onclick="capturePhoto()">📷 Tirar Foto — a IA identifica o produto!</button>
+    <label>📸 Foto / Código de Barras <span class="ai-badge">IA</span></label>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <button class="photo-btn" id="photoBtn" onclick="capturePhoto()" style="flex:1;padding:16px">📷 Tirar Foto</button>
+      <button class="photo-btn" onclick="startBarcodeScan()" style="flex:1;padding:16px">⊟ Código de Barras</button>
+    </div>
     <img id="photoPreview" class="photo-preview" style="display:none">
     <div id="aiPhotoResult"></div>
     <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
@@ -354,6 +393,15 @@ canvas{width:100%;height:auto}
   <div class="form-group"><label>Data de Validade</label><input class="form-input" id="fExpiry" type="date"></div>
   <div class="form-group"><label>Preço Estimado (R$)</label><input class="form-input" id="fPrice" type="number" step="0.01" placeholder="0.00"></div>
   <div class="form-group"><label>📝 Observações</label><textarea class="form-input" id="fNotes" placeholder="Ex: comprei no Zaffari, marca Elegê, sem lactose..." rows="2" style="resize:none;height:auto"></textarea></div>
+  <div id="nutritionSection" class="nutrition-section">
+    <h4>🥗 Informação Nutricional <span class="ai-badge">OFF</span></h4>
+    <div class="nutrition-grid">
+      <div class="nutrition-item"><div class="nut-value" id="nutCalories">-</div><div class="nut-label">Calorias (kcal)</div></div>
+      <div class="nutrition-item"><div class="nut-value" id="nutProteins">-</div><div class="nut-label">Proteínas (g)</div></div>
+      <div class="nutrition-item"><div class="nut-value" id="nutCarbs">-</div><div class="nut-label">Carboidratos (g)</div></div>
+      <div class="nutrition-item"><div class="nut-value" id="nutFat">-</div><div class="nut-label">Gorduras (g)</div></div>
+    </div>
+  </div>
   <div id="freezerInfoBox" class="freezer-info" style="display:none"></div>
   <input type="hidden" id="fId">
   <button class="btn btn-primary" onclick="saveItem()">Salvar</button>
@@ -1223,6 +1271,8 @@ function openAddModal(presetData){
   document.getElementById('freezerInfoBox').style.display='none';
   window._aiPhotoData=null;
   window._photoCompressed=null;
+  window._barcodeNutrition=null;
+  document.getElementById('nutritionSection').classList.remove('visible');
   renderQuickAdd();
   openModal('addModal');
 }
@@ -1262,7 +1312,8 @@ function saveItem(){
     price:parseFloat(document.getElementById('fPrice').value)||0,
     status:existing?(loc==='freezer'&&existing.status==='active'?'frozen':loc!=='freezer'&&existing.status==='frozen'?'active':existing.status):(loc==='freezer'?'frozen':'active'),
     frozenDate:loc==='freezer'?(existing&&existing.frozenDate?existing.frozenDate:today()):null,
-    notes:document.getElementById('fNotes').value
+    notes:document.getElementById('fNotes').value,
+    nutrition:window._barcodeNutrition||(existing?existing.nutrition:null)||null
   };
   if(id){const idx=state.items.findIndex(i=>i.id===id);if(idx>=0)state.items[idx]=item;}
   else{state.items.push(item);state.stats.totalTracked++;}
@@ -1388,6 +1439,14 @@ function showDetail(id){
   if(item.notes)html+=`<p>📝 ${esc(item.notes)}</p>`;
   if(item.frozenDate)html+=`<p>❄️ Congelado em: ${item.frozenDate}</p>`;
   html+=`</div>`;
+  if(item.nutrition&&(item.nutrition.calories||item.nutrition.proteins)){
+    html+=`<div class="nutrition-section visible"><h4>🥗 Informação Nutricional (por 100g)</h4><div class="nutrition-grid">
+      <div class="nutrition-item"><div class="nut-value">${item.nutrition.calories||'-'}</div><div class="nut-label">kcal</div></div>
+      <div class="nutrition-item"><div class="nut-value">${item.nutrition.proteins||'-'}g</div><div class="nut-label">Proteínas</div></div>
+      <div class="nutrition-item"><div class="nut-value">${item.nutrition.carbs||'-'}g</div><div class="nut-label">Carboidratos</div></div>
+      <div class="nutrition-item"><div class="nut-value">${item.nutrition.fat||'-'}g</div><div class="nut-label">Gorduras</div></div>
+    </div></div>`;
+  }
   if(item.photo&&item.photo!=='null'&&item.photo.startsWith('data:image/'))html+=`<img src="${item.photo}" style="width:100%;border-radius:12px;margin-bottom:12px">`;
   if(item.status==='frozen'){
     const name=item.name.toLowerCase();
@@ -1425,6 +1484,15 @@ function editFromDetail(){
   document.getElementById('aiPhotoResult').innerHTML='';
   window._photoCompressed=null;
   window._aiPhotoData=null;
+  window._barcodeNutrition=item.nutrition||null;
+  if(item.nutrition&&(item.nutrition.calories||item.nutrition.proteins)){
+    const ns=document.getElementById('nutritionSection');
+    ns.classList.add('visible');
+    document.getElementById('nutCalories').textContent=item.nutrition.calories||'-';
+    document.getElementById('nutProteins').textContent=item.nutrition.proteins||'-';
+    document.getElementById('nutCarbs').textContent=item.nutrition.carbs||'-';
+    document.getElementById('nutFat').textContent=item.nutrition.fat||'-';
+  }else{document.getElementById('nutritionSection').classList.remove('visible')}
   if(item.photo&&item.photo!=='null'){document.getElementById('photoPreview').src=item.photo;document.getElementById('photoPreview').style.display='block';}
   else{document.getElementById('photoPreview').style.display='none';}
   renderQuickAdd();openModal('addModal');
@@ -1686,6 +1754,154 @@ function shareShoppingList(){
   names.forEach(n=>text+=`☐ ${n}\n`);
   window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
 }
+
+// ===== BARCODE SCANNER =====
+let html5QrCode=null;
+let barcodeScanning=false;
+
+function startBarcodeScan(){
+  if(requireAuth())return;
+  const overlay=document.getElementById('barcodeOverlay');
+  overlay.classList.add('active');
+  barcodeScanning=true;
+
+  html5QrCode=new Html5Qrcode('barcode-reader');
+  html5QrCode.start(
+    {facingMode:'environment'},
+    {fps:10,qrbox:{width:280,height:150},formatsToSupport:[
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.QR_CODE
+    ]},
+    onBarcodeDetected,
+    ()=>{}
+  ).catch(err=>{
+    console.error('Camera error:',err);
+    toast('❌ Não foi possível acessar a câmera');
+    stopBarcodeScan();
+  });
+}
+
+function stopBarcodeScan(){
+  const overlay=document.getElementById('barcodeOverlay');
+  overlay.classList.remove('active');
+  barcodeScanning=false;
+  if(html5QrCode){
+    html5QrCode.stop().then(()=>{html5QrCode.clear()}).catch(()=>{});
+    html5QrCode=null;
+  }
+}
+
+async function onBarcodeDetected(decodedText){
+  if(!barcodeScanning)return;
+  barcodeScanning=false; // prevent multiple triggers
+  stopBarcodeScan();
+  toast('🔍 Código detectado: '+decodedText);
+  await lookupBarcode(decodedText);
+}
+
+async function lookupBarcode(barcode){
+  // Show loading in nlResult
+  const resultDiv=document.getElementById('nlResult');
+  resultDiv.innerHTML='<div class="ai-loading"><span class="ai-spinner">⊟</span> Buscando produto...</div>';
+
+  try{
+    const resp=await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
+    const data=await resp.json();
+
+    if(data.status!==1||!data.product){
+      resultDiv.innerHTML='';
+      toast('❌ Produto não encontrado no banco. Use a foto ou preencha manualmente.',3500);
+      openAddModal();
+      return;
+    }
+
+    const p=data.product;
+    const name=p.product_name||p.product_name_pt||p.product_name_en||'Produto';
+    const brand=p.brands||'';
+    const categories=p.categories||'';
+    const imageUrl=p.image_front_small_url||p.image_url||'';
+    const nut=p.nutriments||{};
+
+    const nutrition={
+      calories:Math.round(nut['energy-kcal_100g']||nut['energy-kcal']||0),
+      proteins:Math.round((nut.proteins_100g||nut.proteins||0)*10)/10,
+      carbs:Math.round((nut.carbohydrates_100g||nut.carbohydrates||0)*10)/10,
+      fat:Math.round((nut.fat_100g||nut.fat||0)*10)/10,
+      fiber:Math.round((nut.fiber_100g||nut.fiber||0)*10)/10,
+      sodium:Math.round((nut.sodium_100g||nut.sodium||0)*1000)/10
+    };
+
+    // Show product card
+    let html=`<div class="barcode-product-card">`;
+    if(imageUrl)html+=`<img src="${esc(imageUrl)}" alt="${esc(name)}" onerror="this.style.display='none'">`;
+    html+=`<h3>⊟ ${esc(name)}</h3>`;
+    if(brand)html+=`<div class="brand">${esc(brand)}</div>`;
+    if(categories)html+=`<div class="categories">${esc(categories.split(',').slice(0,3).join(', '))}</div>`;
+    if(nutrition.calories||nutrition.proteins||nutrition.carbs||nutrition.fat){
+      html+=`<div class="nutrition-grid" style="margin-top:8px">
+        <div class="nutrition-item"><div class="nut-value">${nutrition.calories}</div><div class="nut-label">kcal</div></div>
+        <div class="nutrition-item"><div class="nut-value">${nutrition.proteins}g</div><div class="nut-label">Proteínas</div></div>
+        <div class="nutrition-item"><div class="nut-value">${nutrition.carbs}g</div><div class="nut-label">Carboidratos</div></div>
+        <div class="nutrition-item"><div class="nut-value">${nutrition.fat}g</div><div class="nut-label">Gorduras</div></div>
+      </div>`;
+    }
+    html+=`<button class="ai-apply-btn" style="width:100%;margin-top:10px" onclick="applyBarcodeProduct()">✅ Adicionar este produto</button></div>`;
+    resultDiv.innerHTML=html;
+
+    // Store for later use
+    window._barcodeProduct={name,brand,categories,imageUrl,nutrition,barcode};
+
+  }catch(e){
+    console.error('Open Food Facts error:',e);
+    resultDiv.innerHTML='';
+    toast('❌ Erro ao buscar produto. Tente novamente.',3000);
+  }
+}
+
+function applyBarcodeProduct(){
+  const p=window._barcodeProduct;if(!p)return;
+
+  // Guess category from OFF categories
+  const catStr=(p.categories||'').toLowerCase();
+  let cat='outros';
+  if(catStr.match(/lait|leite|dairy|lácteo|queijo|iogurte|yogurt|cheese/))cat='laticinios';
+  else if(catStr.match(/carne|meat|frango|chicken|peixe|fish|salsich|presunto/))cat='carnes';
+  else if(catStr.match(/fruit|frut|legum|veget|hort|salad/))cat='hortifruti';
+  else if(catStr.match(/pão|bread|padaria|bolo|cake|biscoito|cookie/))cat='padaria';
+  else if(catStr.match(/enlat|canned|conserv|molho|sauce/))cat='enlatados';
+  else if(catStr.match(/higien|soap|shampoo|dentifrício/))cat='higiene';
+
+  openAddModal();
+  document.getElementById('fName').value=p.name+(p.brand?' — '+p.brand:'');
+  document.getElementById('fCategory').value=cat;
+  if(p.brand)document.getElementById('fNotes').value='Marca: '+p.brand+(p.barcode?'\nCódigo: '+p.barcode:'');
+
+  // Show nutrition in modal
+  if(p.nutrition&&(p.nutrition.calories||p.nutrition.proteins)){
+    const ns=document.getElementById('nutritionSection');
+    ns.classList.add('visible');
+    document.getElementById('nutCalories').textContent=p.nutrition.calories||'-';
+    document.getElementById('nutProteins').textContent=p.nutrition.proteins||'-';
+    document.getElementById('nutCarbs').textContent=p.nutrition.carbs||'-';
+    document.getElementById('nutFat').textContent=p.nutrition.fat||'-';
+    window._barcodeNutrition=p.nutrition;
+  }
+
+  // Download product image
+  if(p.imageUrl){
+    document.getElementById('photoPreview').src=p.imageUrl;
+    document.getElementById('photoPreview').style.display='block';
+  }
+
+  document.getElementById('nlResult').innerHTML='';
+  toast('✅ Produto preenchido via código de barras!');
+}
+
+// Override saveItem to include nutrition
+const _origSaveItem=saveItem;
 
 // ===== SERVICE WORKER =====
 if('serviceWorker' in navigator){
