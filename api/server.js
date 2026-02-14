@@ -3,12 +3,16 @@ const Database = require('better-sqlite3');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const path = require('path');
 
 const app = express();
 const PORT = 3457;
 
 app.use(cors());
 app.use(express.json());
+
+// Serve frontend
+app.use(express.static(path.join(__dirname, '..')));
 
 // Database setup
 const db = new Database('/root/.openclaw/workspace/validade/api/validade.db');
