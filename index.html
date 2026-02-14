@@ -1813,8 +1813,9 @@ async function lookupBarcode(barcode){
 
     if(data.status!==1||!data.product){
       resultDiv.innerHTML='';
-      toast('❌ Produto não encontrado no banco. Use a foto ou preencha manualmente.',3500);
+      toast('📷 Produto não encontrado no banco. Tire uma foto para a IA identificar!',3000);
       openAddModal();
+      setTimeout(()=>capturePhoto(),600);
       return;
     }
 
