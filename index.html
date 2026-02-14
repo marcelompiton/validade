@@ -389,6 +389,35 @@ canvas{width:100%;height:auto}
 </div>
 </div>
 
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="authModal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <div id="authContent">
+    <div style="text-align:center;margin-bottom:20px">
+      <span style="font-size:48px">🔒</span>
+      <h2 style="margin-top:8px">Limite Gratuito Atingido</h2>
+      <p style="font-size:14px;color:var(--text2);margin-top:8px">Você pode cadastrar até <strong>3 itens grátis</strong>. Para continuar usando sem limites, faça login ou cadastre-se.</p>
+    </div>
+    <div id="authLogin">
+      <div class="form-group"><label>E-mail</label><input class="form-input" id="authEmail" type="email" placeholder="seu@email.com"></div>
+      <div class="form-group"><label>Senha</label><input class="form-input" id="authPass" type="password" placeholder="Sua senha"></div>
+      <button class="btn btn-primary" style="width:100%" onclick="doLogin()">Entrar</button>
+      <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--text2)">Não tem conta? <a href="#" onclick="showRegister()" style="color:var(--accent);font-weight:700">Cadastre-se grátis</a></p>
+    </div>
+    <div id="authRegister" style="display:none">
+      <div class="form-group"><label>Nome</label><input class="form-input" id="regName" placeholder="Seu nome completo"></div>
+      <div class="form-group"><label>E-mail</label><input class="form-input" id="regEmail" type="email" placeholder="seu@email.com"></div>
+      <div class="form-group"><label>Telefone</label><input class="form-input" id="regPhone" type="tel" placeholder="(00) 00000-0000"></div>
+      <div class="form-group"><label>Senha</label><input class="form-input" id="regPass" type="password" placeholder="Crie uma senha"></div>
+      <button class="btn btn-primary" style="width:100%" onclick="doRegister()">Cadastrar</button>
+      <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--text2)">Já tem conta? <a href="#" onclick="showLogin()" style="color:var(--accent);font-weight:700">Fazer login</a></p>
+    </div>
+  </div>
+  <button class="btn btn-secondary" style="margin-top:12px" onclick="closeModal('authModal')">Cancelar</button>
+</div>
+</div>
+
 <script>
 // ===== GEMINI API =====
 const GEMINI_KEY='AIzaSyBnqalI_0KRLZK7ccZ8_vaQSpvhLU_tP5k';
@@ -513,6 +542,54 @@ const BADGES = [
   {id:'saver',name:'Econômico',icon:'💰',desc:'Economizou R$100+',check:s=>s.moneySaved>=100},
   {id:'starter',name:'Primeiro Passo',icon:'🌟',desc:'Adicionou primeiro item',check:s=>s.totalTracked>=1},
 ];
+
+// ===== AUTH & PAYWALL =====
+const FREE_LIMIT=3;
+function getUser(){try{return JSON.parse(localStorage.getItem('validade_user'))}catch(e){return null}}
+function setUser(u){localStorage.setItem('validade_user',JSON.stringify(u))}
+function isPremium(){return !!getUser()}
+function canAddItem(){
+  if(isPremium())return true;
+  const active=state.items.filter(i=>i.status==='active'||i.status==='frozen').length;
+  return active<FREE_LIMIT;
+}
+function requireAuth(){
+  if(canAddItem())return false;
+  openModal('authModal');showLogin();
+  return true;
+}
+function showLogin(){document.getElementById('authLogin').style.display='block';document.getElementById('authRegister').style.display='none'}
+function showRegister(){document.getElementById('authLogin').style.display='none';document.getElementById('authRegister').style.display='block'}
+function doLogin(){
+  const email=document.getElementById('authEmail').value.trim();
+  const pass=document.getElementById('authPass').value.trim();
+  if(!email||!pass){toast('❌ Preencha e-mail e senha');return}
+  // Check against stored accounts
+  const accounts=JSON.parse(localStorage.getItem('validade_accounts')||'[]');
+  const acc=accounts.find(a=>a.email===email&&a.pass===pass);
+  if(!acc){toast('❌ E-mail ou senha incorretos');return}
+  setUser(acc);
+  closeModal('authModal');
+  toast('✅ Bem-vindo, '+acc.name+'!');
+  renderHome();
+}
+function doRegister(){
+  const name=document.getElementById('regName').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const phone=document.getElementById('regPhone').value.trim();
+  const pass=document.getElementById('regPass').value.trim();
+  if(!name||!email||!phone||!pass){toast('❌ Preencha todos os campos');return}
+  if(!email.includes('@')){toast('❌ E-mail inválido');return}
+  const accounts=JSON.parse(localStorage.getItem('validade_accounts')||'[]');
+  if(accounts.find(a=>a.email===email)){toast('❌ E-mail já cadastrado');return}
+  const acc={name,email,phone,pass,createdAt:new Date().toISOString()};
+  accounts.push(acc);
+  localStorage.setItem('validade_accounts',JSON.stringify(accounts));
+  setUser(acc);
+  closeModal('authModal');
+  toast('✅ Cadastro realizado! Bem-vindo, '+name+'!');
+  renderHome();
+}
 
 // ===== STATE =====
 let state = loadState();
@@ -643,6 +720,7 @@ async function aiRecognizePhoto(base64Data){
 }
 
 function addAllPhotoItems(){
+  if(requireAuth())return;
   const items=window._aiPhotoMulti;if(!items||!items.length)return;
   const photoSrc=window._photoCompressed||null;
   items.forEach(p=>{
@@ -747,6 +825,7 @@ async function aiGetSmartTips(){
 
 // ===== AI FEATURE 4: NATURAL LANGUAGE ADD =====
 async function processNaturalLanguage(){
+  if(requireAuth())return;
   const input=document.getElementById('nlInput').value.trim();
   if(!input){toast('Digite algo!');return}
 
@@ -1007,6 +1086,7 @@ function setupSwipe(){
 
 // ===== ADD/EDIT =====
 function openAddModal(presetData){
+  if(requireAuth())return;
   document.getElementById('modalTitle').textContent='Adicionar Item';
   document.getElementById('fId').value='';
   document.getElementById('fName').value=presetData?.name||'';
@@ -1072,7 +1152,7 @@ function saveItem(){
 }
 
 // Photo with AI recognition
-function homePhoto(){document.getElementById('homePhotoInput').value='';document.getElementById('homePhotoInput').click()}
+function homePhoto(){if(requireAuth())return;document.getElementById('homePhotoInput').value='';document.getElementById('homePhotoInput').click()}
 function handleHomePhoto(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
