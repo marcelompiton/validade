@@ -24,7 +24,7 @@ body.light{--bg:#f5f5ff;--bg2:#eeeef8;--bg3:#e0e0ee;--text:#1a1a2e;--text2:#6666
 .header-btn{background:var(--bg2);border:none;color:var(--text);width:40px;height:40px;border-radius:12px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
 .header-btn:active{transform:scale(.9)}
 
-.page{display:none;padding:0 16px 16px;animation:fadeIn .3s ease}
+.page{display:none;padding:0 16px 120px;animation:fadeIn .3s ease}
 .page.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
@@ -177,15 +177,12 @@ canvas{width:100%;height:auto}
 .ai-loading .ai-spinner{display:inline-block;animation:sparkle 1s infinite;margin-right:6px}
 
 /* AI NL Input */
-.ai-box{background:var(--bg2);border:1.5px solid var(--bg3);border-radius:16px;padding:16px;margin-bottom:16px}
-.ai-box-header{font-size:15px;margin-bottom:4px}
-.ai-box-header strong{color:var(--text)}
-.ai-box-desc{font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.4}
+.ai-chat-bar{position:fixed;bottom:60px;left:0;right:0;background:var(--bg2);border-top:1px solid var(--bg3);padding:8px 12px max(8px,env(safe-area-inset-bottom));z-index:99}
 .ai-box-input{position:relative}
-.ai-box-input textarea{width:100%;padding:14px 16px 50px 16px;background:var(--bg3);border:2px solid transparent;border-radius:12px;color:var(--text);font-size:15px;outline:none;resize:none;height:90px;font-family:inherit;transition:var(--transition);line-height:1.4}
-.ai-box-input textarea:focus{border-color:var(--accent);height:110px}
+.ai-box-input textarea{width:100%;padding:12px 90px 12px 14px;background:var(--bg3);border:2px solid transparent;border-radius:24px;color:var(--text);font-size:15px;outline:none;resize:none;height:46px;font-family:inherit;transition:var(--transition);line-height:1.4}
+.ai-box-input textarea:focus{border-color:var(--accent);height:80px}
 .ai-box-input textarea::placeholder{color:var(--text2)}
-.ai-box-actions{position:absolute;right:10px;bottom:10px;display:flex;gap:8px;align-items:center}
+.ai-box-actions{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;gap:6px;align-items:center}
 .ai-box-photo{width:38px;height:38px;border:none;border-radius:10px;background:var(--bg2);color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
 .ai-box-photo:active{transform:scale(.85);color:var(--accent)}
 .nl-send-btn{width:38px;height:38px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
@@ -217,19 +214,6 @@ canvas{width:100%;height:auto}
 <!-- HOME PAGE -->
 <div id="page-home" class="page active">
   <div id="streak-section"></div>
-  <!-- AI Assistant Box -->
-  <div class="ai-box">
-    <div class="ai-box-header">🤖 <strong>Assistente IA</strong></div>
-    <div class="ai-box-desc">Descreva o que comprou ou tire uma foto — a IA preenche tudo pra você.</div>
-    <div class="ai-box-input">
-      <textarea id="nlInput" placeholder="Ex: 2 litros de leite, vence dia 20, na geladeira" rows="3"></textarea>
-      <div class="ai-box-actions">
-        <button class="ai-box-photo" onclick="homePhoto()">📷</button>
-        <button class="nl-send-btn" onclick="processNaturalLanguage()">➤</button>
-      </div>
-    </div>
-    <input type="file" id="homePhotoInput" accept="image/*" capture="environment" style="display:none" onchange="handleHomePhoto(event)">
-  </div>
   <div id="nlResult"></div>
   <div id="alerts-section"></div>
   <div id="ai-tip-section"></div>
@@ -311,8 +295,17 @@ canvas{width:100%;height:auto}
   </div>
 </div>
 
-<!-- FAB -->
-<button class="fab" id="fab" onclick="openAddModal()" aria-label="Adicionar item">+</button>
+<!-- AI Chat Bar (fixed above bottom nav) -->
+<div class="ai-chat-bar">
+  <div class="ai-box-input">
+    <textarea id="nlInput" placeholder="Descreva o que comprou ou tire uma foto 📷" rows="1"></textarea>
+    <div class="ai-box-actions">
+      <button class="ai-box-photo" onclick="homePhoto()">📷</button>
+      <button class="nl-send-btn" onclick="processNaturalLanguage()">➤</button>
+    </div>
+  </div>
+  <input type="file" id="homePhotoInput" accept="image/*" capture="environment" style="display:none" onchange="handleHomePhoto(event)">
+</div>
 
 <!-- Bottom Nav -->
 <nav class="bottom-nav">
