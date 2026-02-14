@@ -1,4 +1,4 @@
-const CACHE_NAME = 'validade-v13';
+const CACHE_NAME = 'validade-v14';
 const ASSETS = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {

@@ -288,6 +288,8 @@ canvas{width:100%;height:auto}
   <div class="config-item" onclick="shareShoppingList()" style="cursor:pointer">
     <div class="config-left"><span class="config-icon">🛒</span><div><h4>Lista de Compras</h4><p>Baseada em itens consumidos</p></div></div>
   </div>
+  <div class="section-title" style="margin-top:24px">👤 Conta</div>
+  <div id="accountInfo" class="card" style="text-align:center"></div>
   <div class="section-title" style="margin-top:24px">ℹ️ Sobre</div>
   <div class="card" style="text-align:center">
     <p style="font-size:13px;color:var(--text2)">Validade v2.0 <span class="ai-badge">IA</span></p>
@@ -389,32 +391,55 @@ canvas{width:100%;height:auto}
 </div>
 </div>
 
-<!-- AUTH MODAL -->
+<!-- AUTH MODAL (mandatory — no cancel) -->
 <div class="modal-overlay" id="authModal">
 <div class="modal">
   <div class="modal-handle"></div>
-  <div id="authContent">
-    <div style="text-align:center;margin-bottom:20px">
-      <span style="font-size:48px">🔒</span>
-      <h2 style="margin-top:8px">Limite Gratuito Atingido</h2>
-      <p style="font-size:14px;color:var(--text2);margin-top:8px">Você pode cadastrar até <strong>3 itens grátis</strong>. Para continuar usando sem limites, faça login ou cadastre-se.</p>
-    </div>
-    <div id="authLogin">
-      <div class="form-group"><label>E-mail</label><input class="form-input" id="authEmail" type="email" placeholder="seu@email.com"></div>
-      <div class="form-group"><label>Senha</label><input class="form-input" id="authPass" type="password" placeholder="Sua senha"></div>
-      <button class="btn btn-primary" style="width:100%" onclick="doLogin()">Entrar</button>
-      <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--text2)">Não tem conta? <a href="#" onclick="showRegister()" style="color:var(--accent);font-weight:700">Cadastre-se grátis</a></p>
-    </div>
-    <div id="authRegister" style="display:none">
-      <div class="form-group"><label>Nome</label><input class="form-input" id="regName" placeholder="Seu nome completo"></div>
-      <div class="form-group"><label>E-mail</label><input class="form-input" id="regEmail" type="email" placeholder="seu@email.com"></div>
-      <div class="form-group"><label>Telefone</label><input class="form-input" id="regPhone" type="tel" placeholder="(00) 00000-0000"></div>
-      <div class="form-group"><label>Senha</label><input class="form-input" id="regPass" type="password" placeholder="Crie uma senha"></div>
-      <button class="btn btn-primary" style="width:100%" onclick="doRegister()">Cadastrar</button>
-      <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--text2)">Já tem conta? <a href="#" onclick="showLogin()" style="color:var(--accent);font-weight:700">Fazer login</a></p>
-    </div>
+  <div style="text-align:center;margin-bottom:20px">
+    <span style="font-size:48px">🥦</span>
+    <h2 style="margin-top:8px">Bem-vindo ao Validade!</h2>
+    <p style="font-size:14px;color:var(--text2);margin-top:8px">Controle seus alimentos com inteligência artificial. Cadastre-se para começar!</p>
   </div>
-  <button class="btn btn-secondary" style="margin-top:12px" onclick="closeModal('authModal')">Cancelar</button>
+  <div id="authRegister">
+    <div class="form-group"><label>Nome</label><input class="form-input" id="regName" placeholder="Seu nome completo"></div>
+    <div class="form-group"><label>E-mail</label><input class="form-input" id="regEmail" type="email" placeholder="seu@email.com"></div>
+    <div class="form-group"><label>Telefone</label><input class="form-input" id="regPhone" type="tel" placeholder="(00) 00000-0000"></div>
+    <div class="form-group"><label>Senha</label><input class="form-input" id="regPass" type="password" placeholder="Crie uma senha"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="doRegister()">Cadastrar Grátis</button>
+    <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--text2)">Já tem conta? <a href="#" onclick="showLogin()" style="color:var(--accent);font-weight:700">Fazer login</a></p>
+  </div>
+  <div id="authLogin" style="display:none">
+    <div class="form-group"><label>E-mail</label><input class="form-input" id="authEmail" type="email" placeholder="seu@email.com"></div>
+    <div class="form-group"><label>Senha</label><input class="form-input" id="authPass" type="password" placeholder="Sua senha"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="doLogin()">Entrar</button>
+    <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--text2)">Não tem conta? <a href="#" onclick="showRegister()" style="color:var(--accent);font-weight:700">Cadastre-se grátis</a></p>
+  </div>
+</div>
+</div>
+
+<!-- PAYWALL MODAL -->
+<div class="modal-overlay" id="paywallModal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <div style="text-align:center;margin-bottom:20px">
+    <span style="font-size:48px">⭐</span>
+    <h2 style="margin-top:8px">Seja Premium!</h2>
+    <p style="font-size:14px;color:var(--text2);margin-top:12px">Você atingiu o limite de <strong>3 itens grátis</strong>.</p>
+    <p style="font-size:14px;color:var(--text2);margin-top:4px">Desbloqueie itens ilimitados e todos os recursos:</p>
+  </div>
+  <div style="background:var(--bg3);border-radius:12px;padding:16px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span>✅</span><span style="font-size:14px">Itens ilimitados</span></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span>✅</span><span style="font-size:14px">Reconhecimento de foto com IA</span></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span>✅</span><span style="font-size:14px">Receitas anti-desperdício</span></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span>✅</span><span style="font-size:14px">Compartilhar despensa</span></div>
+    <div style="display:flex;align-items:center;gap:8px"><span>✅</span><span style="font-size:14px">Dicas personalizadas</span></div>
+  </div>
+  <div style="text-align:center;margin-bottom:16px">
+    <span style="font-size:36px;font-weight:900;color:var(--accent)">R$ 4,99</span>
+    <span style="font-size:14px;color:var(--text2)">/mês</span>
+  </div>
+  <a href="#" id="premiumLink" class="btn btn-primary" style="width:100%;display:block;text-align:center;text-decoration:none">Assinar Agora</a>
+  <button class="btn btn-secondary" style="margin-top:8px;width:100%" onclick="closeModal('paywallModal')">Continuar com limite</button>
 </div>
 </div>
 
@@ -545,26 +570,33 @@ const BADGES = [
 
 // ===== AUTH & PAYWALL =====
 const FREE_LIMIT=3;
+const PREMIUM_URL='#'; // Link de pagamento (será atualizado)
+const PREMIUM_PRICE='R$ 4,99/mês';
 function getUser(){try{return JSON.parse(localStorage.getItem('validade_user'))}catch(e){return null}}
 function setUser(u){localStorage.setItem('validade_user',JSON.stringify(u))}
-function isPremium(){return !!getUser()}
+function isLoggedIn(){return !!getUser()}
+function isPremium(){const u=getUser();return u&&u.premium===true}
 function canAddItem(){
   if(isPremium())return true;
   const active=state.items.filter(i=>i.status==='active'||i.status==='frozen').length;
   return active<FREE_LIMIT;
 }
 function requireAuth(){
-  if(canAddItem())return false;
-  openModal('authModal');showLogin();
-  return true;
+  if(!isLoggedIn()){showAuthScreen();return true}
+  if(!canAddItem()){showPaywall();return true}
+  return false;
+}
+function showAuthScreen(){
+  document.getElementById('authModal').classList.add('active');
+  showRegister();
 }
 function showLogin(){document.getElementById('authLogin').style.display='block';document.getElementById('authRegister').style.display='none'}
 function showRegister(){document.getElementById('authLogin').style.display='none';document.getElementById('authRegister').style.display='block'}
+function showPaywall(){openModal('paywallModal')}
 function doLogin(){
   const email=document.getElementById('authEmail').value.trim();
   const pass=document.getElementById('authPass').value.trim();
   if(!email||!pass){toast('❌ Preencha e-mail e senha');return}
-  // Check against stored accounts
   const accounts=JSON.parse(localStorage.getItem('validade_accounts')||'[]');
   const acc=accounts.find(a=>a.email===email&&a.pass===pass);
   if(!acc){toast('❌ E-mail ou senha incorretos');return}
@@ -582,13 +614,18 @@ function doRegister(){
   if(!email.includes('@')){toast('❌ E-mail inválido');return}
   const accounts=JSON.parse(localStorage.getItem('validade_accounts')||'[]');
   if(accounts.find(a=>a.email===email)){toast('❌ E-mail já cadastrado');return}
-  const acc={name,email,phone,pass,createdAt:new Date().toISOString()};
+  const acc={name,email,phone,pass,premium:false,createdAt:new Date().toISOString()};
   accounts.push(acc);
   localStorage.setItem('validade_accounts',JSON.stringify(accounts));
   setUser(acc);
   closeModal('authModal');
   toast('✅ Cadastro realizado! Bem-vindo, '+name+'!');
   renderHome();
+}
+function doLogout(){
+  localStorage.removeItem('validade_user');
+  toast('👋 Até logo!');
+  showAuthScreen();
 }
 
 // ===== STATE =====
@@ -1429,6 +1466,13 @@ function renderConfig(){
   document.getElementById('notifToggle').classList.toggle('on',state.settings.notifications);
   document.getElementById('morningToggle').classList.toggle('on',state.settings.morningSummary);
   if(state.shareCode)document.getElementById('shareCode').textContent=state.shareCode;
+  // Account info
+  const user=getUser();
+  const ai=document.getElementById('accountInfo');
+  if(user){
+    const plan=user.premium?'⭐ Premium':'Gratuito (até 3 itens)';
+    ai.innerHTML=`<p style="font-size:15px;font-weight:700">${esc(user.name)}</p><p style="font-size:13px;color:var(--text2);margin-top:4px">${esc(user.email)}</p><p style="font-size:13px;color:var(--text2);margin-top:2px">Plano: ${plan}</p>${!user.premium?'<button class="btn btn-primary" style="margin-top:12px;width:100%" onclick="showPaywall()">⭐ Seja Premium — '+PREMIUM_PRICE+'</button>':''}<button class="btn btn-secondary" style="margin-top:8px;width:100%" onclick="doLogout()">Sair da conta</button>`;
+  }else{ai.innerHTML='<p style="color:var(--text2)">Não logado</p>'}
 }
 
 function toggleTheme(){
@@ -1607,6 +1651,8 @@ function init(){
   renderHome();
   checkNotifications();
   setInterval(checkNotifications,3600000);
+  // Require login on startup
+  if(!isLoggedIn())showAuthScreen();
 }
 init();
 </script>
