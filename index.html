@@ -531,6 +531,15 @@ function getCatName(catId){const c=CATEGORIES.find(x=>x.id===catId);return c?c.n
 function getStatusColor(days){if(days>=999)return'green';if(days<0)return'red';if(days<=2)return'orange';if(days<=7)return'yellow';return'green'}
 function getStatusText(days){if(days>=999)return'Sem validade';if(days<0)return`Vencido há ${Math.abs(days)}d`;if(days===0)return'Vence hoje!';if(days===1)return'Vence amanhã';return`${days} dias`}
 function locName(l){return{geladeira:'🧊 Geladeira',freezer:'❄️ Freezer',despensa:'🏠 Despensa',banheiro:'🚿 Banheiro'}[l]||l}
+function freezerMaxDate(item){
+  if(!item.frozenDate)return null;
+  const name=(item.name||'').toLowerCase();
+  const match=Object.keys(FREEZER_DURATIONS).find(k=>k!=='default'&&name.includes(k));
+  const dur=match?FREEZER_DURATIONS[match]:FREEZER_DURATIONS['default'];
+  const fd=new Date(item.frozenDate);
+  fd.setMonth(fd.getMonth()+dur.months);
+  return fd.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+}
 
 // ===== TOAST =====
 function toast(msg,duration=2500){
@@ -928,8 +937,15 @@ function renderItems(){
   if(!items.length){list.innerHTML='';return}
 
   list.innerHTML=items.map(item=>{
-    const d=item.status==='frozen'?'Congelado':getStatusText(daysUntil(item.expiryDate));
-    const color=item.status==='frozen'?'frozen':getStatusColor(daysUntil(item.expiryDate));
+    let d,color;
+    if(item.status==='frozen'){
+      const fd=freezerMaxDate(item);
+      d=fd?'Até '+fd:'Congelado';
+      color='frozen';
+    }else{
+      d=getStatusText(daysUntil(item.expiryDate));
+      color=getStatusColor(daysUntil(item.expiryDate));
+    }
     return `<div class="item-row" data-id="${item.id}" onclick="showDetail(this.dataset.id)">
       <div class="item-bg left">✅ Consumido</div>
       <div class="item-bg right">🗑️ Deletar</div>
