@@ -108,6 +108,8 @@ app.post('/api/login', (req, res) => {
   if (rateLimit(req.ip, 10)) return res.status(429).json({ error: 'Too many attempts. Try again later.' });
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+  if (!validateEmail(email)) return res.status(400).json({ error: 'Invalid email' });
+  if (typeof password !== 'string' || password.length > 128) return res.status(400).json({ error: 'Invalid password' });
 
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase());
   if (!user || !bcrypt.compareSync(password, user.password)) {
