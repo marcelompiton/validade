@@ -346,31 +346,6 @@ canvas{width:100%;height:auto}
 .chart-line-container{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px}
 .chart-line-container h3{font-size:14px;margin-bottom:12px}
 
-/* Price History & Market Comparison */
-.sparkline-wrap{display:inline-block;vertical-align:middle;margin-left:4px}
-.sparkline-wrap canvas{vertical-align:middle}
-.price-trend{font-size:10px;font-weight:700;margin-left:3px;vertical-align:middle}
-.price-trend.up{color:var(--red)}
-.price-trend.down{color:var(--green)}
-.price-trend.stable{color:var(--text2)}
-.price-alert{background:linear-gradient(135deg,rgba(253,203,110,.15),rgba(225,112,85,.08));border:1px solid rgba(253,203,110,.2);border-radius:12px;padding:12px;margin-bottom:8px;font-size:13px;display:flex;align-items:center;gap:8px}
-.opportunity-card{background:linear-gradient(135deg,rgba(0,184,148,.12),rgba(108,92,231,.08));border:1px solid rgba(0,184,148,.2);border-radius:var(--radius);padding:14px;margin-bottom:12px;font-size:13px;line-height:1.5}
-.opportunity-card h4{font-size:14px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
-.market-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
-.market-table th{text-align:left;padding:8px 6px;border-bottom:2px solid var(--bg3);font-size:11px;color:var(--text2);text-transform:uppercase}
-.market-table td{padding:8px 6px;border-bottom:1px solid var(--bg3)}
-.market-table tr:last-child td{border-bottom:none}
-.market-highlight{background:rgba(0,184,148,.1);border-radius:8px;padding:8px 12px;margin-top:8px;font-size:12px;color:var(--green);display:flex;align-items:center;gap:6px}
-.spending-legend{font-size:11px;color:var(--text2);margin-top:8px}
-.spending-legend div{display:flex;align-items:center;gap:6px;margin:4px 0}
-.spending-legend .swatch{width:12px;height:12px;border-radius:3px;flex-shrink:0}
-.report-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;background:var(--bg3);border:none;border-radius:10px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;margin-top:8px;transition:var(--transition)}
-.report-btn:active{transform:scale(.95)}
-.autocomplete-wrap{position:relative}
-.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--bg3);border-radius:0 0 12px 12px;max-height:150px;overflow-y:auto;z-index:10;display:none}
-.autocomplete-list.show{display:block}
-.autocomplete-item{padding:10px 14px;cursor:pointer;font-size:13px;transition:background .2s}
-.autocomplete-item:hover,.autocomplete-item:active{background:var(--bg3)}
 </style>
 </head>
 <body>
@@ -393,8 +368,6 @@ canvas{width:100%;height:auto}
   <div id="nlResult"></div>
   <div id="daily-suggestion-section"></div>
   <div id="alerts-section"></div>
-  <div id="price-alerts-section"></div>
-  <div id="opportunity-section"></div>
   <div id="ranking-section"></div>
   <div id="meal-planning-section"></div>
   <div id="chef-mode-section"></div>
@@ -431,8 +404,6 @@ canvas{width:100%;height:auto}
   <div class="chart-line-container"><h3>📈 Economia Mensal (últimos 6 meses)</h3><canvas id="lineChart" width="300" height="200"></canvas></div>
   <div class="chart-container"><h3>📊 Consumidos vs Desperdiçados</h3><canvas id="pieChart" width="300" height="200"></canvas></div>
   <div class="chart-container"><h3>💰 Desperdício Mensal (R$)</h3><canvas id="barChart" width="300" height="200"></canvas></div>
-  <div id="market-comparison-section"></div>
-  <div id="monthly-report-section"></div>
   <div class="section-title">🏅 Conquistas</div>
   <div class="badge-grid" id="badgeGrid"></div>
 </div>
@@ -607,7 +578,6 @@ canvas{width:100%;height:auto}
   </div>
   <div class="form-group"><label>Data de Validade</label><input class="form-input" id="fExpiry" type="date"></div>
   <div class="form-group"><label>Preço Estimado (R$)</label><input class="form-input" id="fPrice" type="number" step="0.01" placeholder="0.00"></div>
-  <div class="form-group autocomplete-wrap"><label>🏪 Onde comprou (opcional)</label><input class="form-input" id="fStore" placeholder="Ex: Zaffari, Carrefour..." autocomplete="off" oninput="showStoreAutocomplete(this.value)" onfocus="showStoreAutocomplete(this.value)"><div class="autocomplete-list" id="storeAutocomplete"></div></div>
   <div class="form-group"><label>📝 Observações</label><textarea class="form-input" id="fNotes" placeholder="Ex: comprei no Zaffari, marca Elegê, sem lactose..." rows="2" style="resize:none;height:auto"></textarea></div>
   <div id="nutritionSection" class="nutrition-section">
     <h4>🥗 Informação Nutricional <span class="ai-badge">OFF</span></h4>
@@ -1123,7 +1093,6 @@ function addAllPhotoItems(){
       addedDate:today(),photo:photoSrc,price:parseFloat(p.estimatedPrice)||0,
       notes:'',status:'active',frozenDate:null
     });
-    if(parseFloat(p.estimatedPrice)>0)recordPrice(p.name,parseFloat(p.estimatedPrice)||0,'',validCat);
     state.stats.totalTracked++;
   });
   save();renderHome();renderItems();
@@ -1259,7 +1228,6 @@ function addFromNL(index,btn){
     addedDate:today(),photo:null,price:item.price||0,
     status:loc==='freezer'?'frozen':'active',frozenDate:loc==='freezer'?today():null,notes:'Adicionado via IA'
   });
-  if(item.price>0)recordPrice(item.name||'Item',item.price||0,'',cat);
   state.stats.totalTracked++;
   save();renderHome();renderItems();
   toast('✅ '+item.name+' adicionado!');
@@ -1283,8 +1251,7 @@ function addAllFromNL(){
       addedDate:today(),photo:null,price:item.price||0,
       status:loc==='freezer'?'frozen':'active',frozenDate:loc==='freezer'?today():null,notes:'Adicionado via IA'
     });
-    if(item.price>0)recordPrice(item.name||'Item',item.price||0,'',cat);
-    state.stats.totalTracked++;count++;
+      state.stats.totalTracked++;count++;
   });
   save();renderHome();renderItems();
   document.getElementById('nlInput').value='';
@@ -1319,10 +1286,6 @@ function renderHome(){
   if(expToday.length) alerts+=`<div class="alert-card orange"><span class="alert-icon">⏰</span><div class="alert-info"><h3>${expToday.length} item(ns) vencem hoje!</h3><p>${expToday.map(i=>esc(i.name)).join(', ')}</p></div><span class="alert-count">${expToday.length}</span></div>`;
   if(exp3.length) alerts+=`<div class="alert-card yellow"><span class="alert-icon">📅</span><div class="alert-info"><h3>${exp3.length} item(ns) nos próximos 3 dias</h3><p>${exp3.map(i=>esc(i.name)).join(', ')}</p></div><span class="alert-count">${exp3.length}</span></div>`;
   document.getElementById('alerts-section').innerHTML=alerts;
-
-  // Price & opportunity alerts
-  renderPriceAlerts();
-  renderOpportunityAlerts();
 
   // Tips section: 5 tips (seasonal + AI generated, cached)
   renderAllTips();
@@ -1460,13 +1423,12 @@ function renderItems(){
       <div class="item-bg right">🗑️ Deletar</div>
       <div class="item-content">
         <span class="item-emoji">${getCatEmoji(item.category)}</span>
-        <div class="item-info"><h4>${esc(item.name)}${(()=>{const ph=getItemPriceHistory(item.name);return ph.length>=2?`<span class="sparkline-wrap"><canvas class="sparkline-canvas" id="spark-${item.id}" data-name="${esc(item.name)}" width="50" height="16"></canvas>${(()=>{const t=getPriceTrend(ph);return t.trend!=='stable'?`<span class="price-trend ${t.trend}">${t.trend==='up'?'▲':'▼'}${t.pct}%</span>`:''})()}</span>`:''})()}</h4><p>${item.quantity}${esc(item.unit)} · ${locName(item.location)}${item.store?' · 🏪 '+esc(item.store):''}${item.house&&state.houses&&state.houses.length>1?' · '+getHouseName(item.house):''}</p></div>
+        <div class="item-info"><h4>${esc(item.name)}</span>`:''})()}</h4><p>${item.quantity}${esc(item.unit)} · ${locName(item.location)}${item.house&&state.houses&&state.houses.length>1?' · '+getHouseName(item.house):''}</p></div>
         <span class="item-badge ${color}">${d}</span>
       </div>
     </div>`;
   }).join('');
   setupSwipe();
-  setTimeout(renderItemSparklines,50);
 }
 
 const debouncedRenderItems=debounce(renderItems,200);
@@ -1516,7 +1478,6 @@ function openAddModal(presetData){
   const d=new Date();d.setDate(d.getDate()+(presetData?.days||7));
   document.getElementById('fExpiry').value=d.toISOString().split('T')[0];
   document.getElementById('fPrice').value='';
-  document.getElementById('fStore').value='';
   document.getElementById('fNotes').value='';
   document.getElementById('photoPreview').style.display='none';
   document.getElementById('photoPreview').src='';
@@ -1566,11 +1527,8 @@ function saveItem(){
     status:existing?(loc==='freezer'&&existing.status==='active'?'frozen':loc!=='freezer'&&existing.status==='frozen'?'active':existing.status):(loc==='freezer'?'frozen':'active'),
     frozenDate:loc==='freezer'?(existing&&existing.frozenDate?existing.frozenDate:today()):null,
     notes:document.getElementById('fNotes').value,
-    store:(document.getElementById('fStore').value||'').trim(),
     nutrition:window._barcodeNutrition||(existing?existing.nutrition:null)||null
   };
-  // Record price history
-  if(item.price>0&&!id){recordPrice(item.name,item.price,item.store,item.category)}
   if(id){const idx=state.items.findIndex(i=>i.id===id);if(idx>=0)state.items[idx]=item;}
   else{state.items.push(item);state.stats.totalTracked++;}
   save();closeModal('addModal');renderHome();renderItems();
@@ -1696,13 +1654,6 @@ function showDetail(id){
   let html=`<div style="text-align:center;margin-bottom:16px"><span style="font-size:48px">${getCatEmoji(item.category)}</span><h2 style="margin-top:8px">${esc(item.name)}</h2><span class="item-badge ${color}" style="display:inline-block;margin-top:8px;font-size:14px;padding:6px 16px">${statusText}</span></div>`;
   html+=`<div class="card"><p>📁 ${getCatName(item.category)}</p><p>📍 ${locName(item.location)}</p><p>📦 ${item.quantity} ${esc(item.unit)}</p><p>📅 Validade: ${item.expiryDate}</p>`;
   if(item.price)html+=`<p>💰 R$ ${item.price.toFixed(2)}</p>`;
-  if(item.store)html+=`<p>🏪 ${esc(item.store)}</p>`;
-  const ph=getItemPriceHistory(item.name);
-  if(ph.length>=2){
-    const avg=getAvgPrice(ph);
-    const t=getPriceTrend(ph);
-    html+=`<p>📈 Média: R$ ${avg.toFixed(2)} (${ph.length} registros) ${t.trend==='up'?'<span style="color:var(--red)">▲'+t.pct+'%</span>':t.trend==='down'?'<span style="color:var(--green)">▼'+t.pct+'%</span>':'estável'}</p>`;
-  }
   if(item.notes)html+=`<p>📝 ${esc(item.notes)}</p>`;
   if(item.frozenDate)html+=`<p>❄️ Congelado em: ${item.frozenDate}</p>`;
   html+=`</div>`;
@@ -1747,7 +1698,6 @@ function editFromDetail(){
   document.getElementById('fUnit').value=item.unit;
   document.getElementById('fExpiry').value=item.expiryDate;
   document.getElementById('fPrice').value=item.price||'';
-  document.getElementById('fStore').value=item.store||'';
   document.getElementById('fNotes').value=item.notes||'';
   document.getElementById('aiPhotoResult').innerHTML='';
   window._photoCompressed=null;
@@ -1847,8 +1797,6 @@ function renderStats(){
   drawLineChart();
   drawPie(consumed,wasted);
   drawBarChart();
-  renderMarketComparison();
-  renderMonthlyReport();
   renderBadges();
 }
 
@@ -2101,7 +2049,6 @@ function exportBackup(){
     consumptionHistory:getConsumptionHistory(),
     gamification:getGamification(),
     weeklyPlan:getWeeklyPlan(),
-    priceHistory:getPriceHistory(),
     version:2
   };
   const blob=new Blob([JSON.stringify(fullBackup,null,2)],{type:'application/json'});
@@ -2124,7 +2071,6 @@ function importBackup(e){
         if(imported.consumptionHistory)saveConsumptionHistory(imported.consumptionHistory);
         if(imported.gamification)saveGamification(imported.gamification);
         if(imported.weeklyPlan)saveWeeklyPlan(imported.weeklyPlan);
-        if(imported.priceHistory)savePriceHistory(imported.priceHistory);
       }
       save();document.body.classList.toggle('light',!state.settings.darkMode);document.getElementById('themeBtn').textContent=state.settings.darkMode?'🌙':'☀️';renderHome();toast('📥 Backup restaurado!')}
     catch(err){toast('❌ Arquivo inválido!')}
@@ -3115,346 +3061,6 @@ CHEF_BADGES.forEach(b=>{if(!BADGES.find(x=>x.id===b.id))BADGES.push(b)});
 
 // Note: renderMealPlanning, renderChefMode, renderWeeklyPlanner, renderDailySuggestion
 // are called directly at the end of renderHome() above.
-
-// ===== PRICE HISTORY & MARKET COMPARISON =====
-function getPriceHistory(){try{return JSON.parse(localStorage.getItem('validade_price_history'))||[]}catch(e){return[]}}
-function savePriceHistory(h){try{localStorage.setItem('validade_price_history',JSON.stringify(h))}catch(e){console.error('Price history save error',e)}}
-
-function recordPrice(name,price,store,category,date){
-  if(!price||price<=0)return;
-  const h=getPriceHistory();
-  h.push({name:name.toLowerCase().trim(),price,store:(store||'').trim(),category:category||'outros',date:date||today()});
-  // Keep max 500 entries
-  if(h.length>500)h.splice(0,h.length-500);
-  savePriceHistory(h);
-}
-
-function getItemPriceHistory(name){
-  return getPriceHistory().filter(e=>e.name===name.toLowerCase().trim()).sort((a,b)=>a.date.localeCompare(b.date));
-}
-
-function getAllStores(){
-  const stores=new Set();
-  getPriceHistory().forEach(e=>{if(e.store)stores.add(e.store)});
-  state.items.forEach(i=>{if(i.store)stores.add(i.store)});
-  return[...stores].sort();
-}
-
-function showStoreAutocomplete(val){
-  const list=document.getElementById('storeAutocomplete');
-  const stores=getAllStores().filter(s=>!val||s.toLowerCase().includes(val.toLowerCase()));
-  if(!stores.length||!val){list.classList.remove('show');return}
-  list.innerHTML=stores.map(s=>`<div class="autocomplete-item" onmousedown="selectStore('${esc(s)}')">${esc(s)}</div>`).join('');
-  list.classList.add('show');
-}
-function selectStore(s){
-  document.getElementById('fStore').value=s;
-  document.getElementById('storeAutocomplete').classList.remove('show');
-}
-document.addEventListener('click',e=>{
-  if(!e.target.closest('.autocomplete-wrap'))document.querySelectorAll('.autocomplete-list').forEach(l=>l.classList.remove('show'));
-});
-
-function drawSparkline(canvasId,prices,w,h){
-  const c=document.getElementById(canvasId);if(!c)return;
-  const ctx=c.getContext('2d');c.width=w;c.height=h;ctx.clearRect(0,0,w,h);
-  if(prices.length<2)return;
-  const vals=prices.map(p=>p.price);
-  const min=Math.min(...vals),max=Math.max(...vals);
-  const range=max-min||1;
-  const step=w/(vals.length-1);
-  ctx.beginPath();ctx.strokeStyle='#6c5ce7';ctx.lineWidth=1.5;
-  vals.forEach((v,i)=>{
-    const x=i*step,y=h-((v-min)/range)*(h-4)-2;
-    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
-  });
-  ctx.stroke();
-  // dot on last point
-  const lastX=(vals.length-1)*step,lastY=h-((vals[vals.length-1]-min)/range)*(h-4)-2;
-  ctx.beginPath();ctx.arc(lastX,lastY,2,0,Math.PI*2);ctx.fillStyle=vals[vals.length-1]>vals[vals.length-2]?'#d63031':'#00b894';ctx.fill();
-}
-
-function getPriceTrend(prices){
-  if(prices.length<2)return{trend:'stable',pct:0};
-  const last=prices[prices.length-1].price;
-  const prev=prices[prices.length-2].price;
-  if(prev===0)return{trend:'stable',pct:0};
-  const pct=((last-prev)/prev)*100;
-  if(pct>5)return{trend:'up',pct:Math.round(pct)};
-  if(pct<-5)return{trend:'down',pct:Math.round(Math.abs(pct))};
-  return{trend:'stable',pct:0};
-}
-
-function getAvgPrice(prices){
-  if(!prices.length)return 0;
-  return prices.reduce((s,p)=>s+p.price,0)/prices.length;
-}
-
-// Render price alerts on home
-function renderPriceAlerts(){
-  const section=document.getElementById('price-alerts-section');if(!section)return;
-  const history=getPriceHistory();
-  if(history.length<2){section.innerHTML='';return}
-  const items=state.items.filter(i=>i.status==='active'||i.status==='frozen');
-  let html='';
-  items.forEach(item=>{
-    const ph=getItemPriceHistory(item.name);
-    if(ph.length<2)return;
-    const t=getPriceTrend(ph);
-    if(t.trend==='up'&&t.pct>=15){
-      html+=`<div class="price-alert">⚠️ <strong>${esc(item.name)}</strong> subiu ${t.pct}% desde a última compra (R$ ${ph[ph.length-2].price.toFixed(2)} → R$ ${ph[ph.length-1].price.toFixed(2)})</div>`;
-    }
-  });
-  section.innerHTML=html;
-}
-
-// Render opportunity alerts on home
-function renderOpportunityAlerts(){
-  const section=document.getElementById('opportunity-section');if(!section)return;
-  const history=getPriceHistory();
-  if(history.length<3){section.innerHTML='';return}
-
-  // Find items bought at 2+ stores
-  const itemStores={};
-  history.forEach(e=>{
-    if(!e.store)return;
-    if(!itemStores[e.name])itemStores[e.name]={};
-    if(!itemStores[e.name][e.store])itemStores[e.name][e.store]=[];
-    itemStores[e.name][e.store].push(e.price);
-  });
-
-  let html='';
-  Object.entries(itemStores).forEach(([name,stores])=>{
-    const storeNames=Object.keys(stores);
-    if(storeNames.length<2)return;
-    // avg price per store
-    const avgs=storeNames.map(s=>({store:s,avg:stores[s].reduce((a,b)=>a+b,0)/stores[s].length,count:stores[s].length}));
-    avgs.sort((a,b)=>a.avg-b.avg);
-    const cheapest=avgs[0];
-    const mostExpensive=avgs[avgs.length-1];
-    const diff=mostExpensive.avg-cheapest.avg;
-    if(diff<0.5)return;
-
-    // Check if user buys frequently (4+ times)
-    const totalBuys=avgs.reduce((s,a)=>s+a.count,0);
-    const weeksOfData=Math.max(1,Math.ceil((new Date()-new Date(history.filter(e=>e.name===name)[0].date))/(7*864e5)));
-    const buysPerWeek=totalBuys/weeksOfData;
-    const monthlySaving=diff*buysPerWeek*4.3;
-
-    const displayName=name.charAt(0).toUpperCase()+name.slice(1);
-    html+=`<div class="opportunity-card"><h4>💡 Dica de Economia</h4>${esc(displayName)} é R$ ${diff.toFixed(2)} mais barato no <strong>${esc(cheapest.store)}</strong>${monthlySaving>=2?` — economia de ~R$ ${monthlySaving.toFixed(0)}/mês!`:''}</div>`;
-  });
-  section.innerHTML=html;
-}
-
-// Market comparison for stats page
-function renderMarketComparison(){
-  const section=document.getElementById('market-comparison-section');if(!section)return;
-  const history=getPriceHistory();
-  const stores=getAllStores();
-  if(stores.length<1){section.innerHTML='';return}
-
-  // Total spent per store
-  const storeTotal={};
-  const storeCatAvg={};
-  history.forEach(e=>{
-    if(!e.store)return;
-    storeTotal[e.store]=(storeTotal[e.store]||0)+e.price;
-    if(!storeCatAvg[e.store])storeCatAvg[e.store]={};
-    if(!storeCatAvg[e.store][e.category])storeCatAvg[e.store][e.category]=[];
-    storeCatAvg[e.store][e.category].push(e.price);
-  });
-
-  if(!Object.keys(storeTotal).length){section.innerHTML='';return}
-
-  let html=`<div class="card"><h3 style="font-size:16px;margin-bottom:12px">🏪 Onde é mais barato?</h3>`;
-  html+=`<table class="market-table"><tr><th>Mercado</th><th>Total Gasto</th><th>Itens</th><th>Preço Médio</th></tr>`;
-
-  const sortedStores=Object.entries(storeTotal).sort((a,b)=>b[1]-a[1]);
-  sortedStores.forEach(([store,total])=>{
-    const items=history.filter(e=>e.store===store).length;
-    const avg=total/items;
-    html+=`<tr><td><strong>${esc(store)}</strong></td><td>R$ ${total.toFixed(2)}</td><td>${items}</td><td>R$ ${avg.toFixed(2)}</td></tr>`;
-  });
-  html+=`</table>`;
-
-  // Find category savings highlights
-  const highlights=[];
-  CATEGORIES.forEach(cat=>{
-    const catStoreAvgs={};
-    Object.entries(storeCatAvg).forEach(([store,cats])=>{
-      if(cats[cat.id]&&cats[cat.id].length>=2){
-        catStoreAvgs[store]=cats[cat.id].reduce((a,b)=>a+b,0)/cats[cat.id].length;
-      }
-    });
-    const entries=Object.entries(catStoreAvgs);
-    if(entries.length<2)return;
-    entries.sort((a,b)=>a[1]-b[1]);
-    const cheapest=entries[0];
-    const mostExp=entries[entries.length-1];
-    const pctDiff=((mostExp[1]-cheapest[1])/mostExp[1]*100).toFixed(0);
-    if(pctDiff>=10){
-      highlights.push(`${cat.emoji} ${cat.name} é ${pctDiff}% mais barato no <strong>${esc(cheapest[0])}</strong>`);
-    }
-  });
-
-  highlights.slice(0,3).forEach(h=>{
-    html+=`<div class="market-highlight">💚 ${h}</div>`;
-  });
-
-  html+=`</div>`;
-  section.innerHTML=html;
-}
-
-// Monthly spending report for stats page
-function renderMonthlyReport(){
-  const section=document.getElementById('monthly-report-section');if(!section)return;
-  const history=getPriceHistory();
-  if(history.length<1){section.innerHTML='';return}
-
-  const now=new Date();
-  const curMonth=now.toISOString().slice(0,7);
-  const prevDate=new Date(now);prevDate.setMonth(prevDate.getMonth()-1);
-  const prevMonth=prevDate.toISOString().slice(0,7);
-
-  const curEntries=history.filter(e=>e.date.startsWith(curMonth));
-  const prevEntries=history.filter(e=>e.date.startsWith(prevMonth));
-
-  const curTotal=curEntries.reduce((s,e)=>s+e.price,0);
-  const prevTotal=prevEntries.reduce((s,e)=>s+e.price,0);
-
-  // Per category
-  const catSpend={};
-  curEntries.forEach(e=>{catSpend[e.category]=(catSpend[e.category]||0)+e.price});
-
-  // Per store
-  const storeSpend={};
-  curEntries.forEach(e=>{if(e.store)storeSpend[e.store]=(storeSpend[e.store]||0)+e.price});
-
-  // Most expensive / cheapest item
-  let mostExp=null,cheapest=null;
-  curEntries.forEach(e=>{
-    if(!mostExp||e.price>mostExp.price)mostExp=e;
-    if(!cheapest||e.price<cheapest.price)cheapest=e;
-  });
-
-  const monthNames=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const monthLabel=monthNames[now.getMonth()]+'/'+now.getFullYear();
-
-  let html=`<div class="card"><h3 style="font-size:16px;margin-bottom:12px">📋 Relatório Mensal — ${monthLabel}</h3>`;
-
-  // Category pie chart
-  const catColors=['#6c5ce7','#00b894','#fdcb6e','#e17055','#d63031','#74b9ff','#a855f7','#55efc4'];
-  const catEntries=Object.entries(catSpend).sort((a,b)=>b[1]-a[1]);
-
-  if(catEntries.length){
-    html+=`<h4 style="font-size:13px;margin:12px 0 8px">💰 Gasto por Categoria</h4>`;
-    html+=`<canvas id="spendingPieChart" width="300" height="180"></canvas>`;
-    html+=`<div class="spending-legend">`;
-    catEntries.forEach(([cat,val],i)=>{
-      html+=`<div><span class="swatch" style="background:${catColors[i%catColors.length]}"></span>${getCatEmoji(cat)} ${getCatName(cat)}: R$ ${val.toFixed(2)}</div>`;
-    });
-    html+=`</div>`;
-  }
-
-  if(Object.keys(storeSpend).length){
-    html+=`<h4 style="font-size:13px;margin:16px 0 8px">🏪 Gasto por Mercado</h4>`;
-    Object.entries(storeSpend).sort((a,b)=>b[1]-a[1]).forEach(([store,val])=>{
-      const pct=curTotal>0?(val/curTotal*100).toFixed(0):0;
-      html+=`<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span>${esc(store)}</span><span>R$ ${val.toFixed(2)} (${pct}%)</span></div>`;
-    });
-  }
-
-  html+=`<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bg3)">`;
-  html+=`<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700"><span>Total do mês</span><span>R$ ${curTotal.toFixed(2)}</span></div>`;
-  if(prevTotal>0){
-    const diff=curTotal-prevTotal;
-    const pct=((diff/prevTotal)*100).toFixed(0);
-    const color=diff>0?'var(--red)':'var(--green)';
-    const arrow=diff>0?'↑':'↓';
-    html+=`<div style="font-size:12px;color:${color};margin-top:4px">${arrow} ${Math.abs(pct)}% vs mês anterior (R$ ${prevTotal.toFixed(2)})</div>`;
-  }
-  if(mostExp)html+=`<div style="font-size:12px;color:var(--text2);margin-top:8px">💸 Mais caro: ${esc(mostExp.name)} — R$ ${mostExp.price.toFixed(2)}${mostExp.store?' ('+esc(mostExp.store)+')':''}</div>`;
-  if(cheapest&&cheapest!==mostExp)html+=`<div style="font-size:12px;color:var(--text2);margin-top:2px">🏷️ Mais barato: ${esc(cheapest.name)} — R$ ${cheapest.price.toFixed(2)}</div>`;
-  html+=`</div>`;
-
-  html+=`<button class="report-btn" onclick="shareMonthlyReport()">📤 Compartilhar Relatório</button>`;
-  html+=`</div>`;
-  section.innerHTML=html;
-
-  // Draw spending pie
-  if(catEntries.length){
-    setTimeout(()=>drawSpendingPie(catEntries,catColors),50);
-  }
-}
-
-function drawSpendingPie(entries,colors){
-  const c=document.getElementById('spendingPieChart');if(!c)return;
-  const ctx=c.getContext('2d');c.width=300;c.height=180;ctx.clearRect(0,0,300,180);
-  const total=entries.reduce((s,e)=>s+e[1],0);
-  if(!total)return;
-  const cx=90,cy=90,r=70;
-  let angle=0;
-  entries.forEach(([cat,val],i)=>{
-    const slice=(val/total)*Math.PI*2;
-    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+slice);
-    ctx.fillStyle=colors[i%colors.length];ctx.fill();
-    angle+=slice;
-  });
-  // Inner circle for donut
-  ctx.beginPath();ctx.arc(cx,cy,40,0,Math.PI*2);
-  ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--card').trim();ctx.fill();
-  // Center text
-  ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--text').trim();
-  ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText('R$ '+total.toFixed(0),cx,cy);
-}
-
-function shareMonthlyReport(){
-  const history=getPriceHistory();
-  const now=new Date();
-  const curMonth=now.toISOString().slice(0,7);
-  const entries=history.filter(e=>e.date.startsWith(curMonth));
-  const total=entries.reduce((s,e)=>s+e.price,0);
-  const monthNames=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-
-  let text=`📋 *Relatório Mensal — ${monthNames[now.getMonth()]}/${now.getFullYear()}*\n\n`;
-  text+=`💰 Total gasto: R$ ${total.toFixed(2)}\n`;
-  text+=`📦 ${entries.length} compras registradas\n\n`;
-
-  const catSpend={};
-  entries.forEach(e=>{catSpend[e.category]=(catSpend[e.category]||0)+e.price});
-  text+=`*Por categoria:*\n`;
-  Object.entries(catSpend).sort((a,b)=>b[1]-a[1]).forEach(([cat,val])=>{
-    text+=`${getCatEmoji(cat)} ${getCatName(cat)}: R$ ${val.toFixed(2)}\n`;
-  });
-
-  const storeSpend={};
-  entries.forEach(e=>{if(e.store)storeSpend[e.store]=(storeSpend[e.store]||0)+e.price});
-  if(Object.keys(storeSpend).length){
-    text+=`\n*Por mercado:*\n`;
-    Object.entries(storeSpend).sort((a,b)=>b[1]-a[1]).forEach(([store,val])=>{
-      text+=`🏪 ${store}: R$ ${val.toFixed(2)}\n`;
-    });
-  }
-
-  text+=`\n_Gerado pelo app Validade 🥦_`;
-
-  if(navigator.share){
-    navigator.share({title:'Relatório Mensal',text}).catch(()=>{});
-  }else{
-    window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
-  }
-}
-
-// Render sparklines after items render
-function renderItemSparklines(){
-  document.querySelectorAll('.sparkline-canvas').forEach(c=>{
-    const name=c.dataset.name;
-    const ph=getItemPriceHistory(name);
-    if(ph.length>=2)drawSparkline(c.id,ph,50,16);
-  });
-}
 
 function init(){
   document.body.classList.toggle('light',!state.settings.darkMode);
