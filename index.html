@@ -1127,6 +1127,7 @@ function addAllPhotoItems(){
   save();renderHome();renderItems();
   closeModal('addModal');
   toast(`✅ ${items.length} itens adicionados!`);
+  addXP(items.length*10,"foto IA!");const gg=getGamification();gg.photosUsed=(gg.photosUsed||0)+1;saveGamification(gg);trackChallengeProgress("photo");
   window._aiPhotoMulti=null;
 }
 
@@ -1259,6 +1260,7 @@ function addFromNL(index,btn){
   state.stats.totalTracked++;
   save();renderHome();renderItems();
   toast('✅ '+item.name+' adicionado!');
+  addXP(10,"via IA!");trackChallengeProgress("add");
   if(btn){btn.textContent='✔️ Adicionado';btn.disabled=true;btn.style.opacity='.5';}
 }
 
@@ -1284,6 +1286,7 @@ function addAllFromNL(){
   document.getElementById('nlInput').value='';
   document.getElementById('nlResult').innerHTML='';
   toast(`✅ ${count} item(ns) adicionado(s)!`);
+  addXP(count*10,"novos itens!");
 }
 
 // NL input: Enter to send
@@ -1313,6 +1316,10 @@ function renderHome(){
   if(exp3.length) alerts+=`<div class="alert-card yellow"><span class="alert-icon">📅</span><div class="alert-info"><h3>${exp3.length} item(ns) nos próximos 3 dias</h3><p>${exp3.map(i=>esc(i.name)).join(', ')}</p></div><span class="alert-count">${exp3.length}</span></div>`;
   document.getElementById('alerts-section').innerHTML=alerts;
 
+  // Price & opportunity alerts
+  renderPriceAlerts();
+  renderOpportunityAlerts();
+
   // Tips section: 5 tips (seasonal + AI generated, cached)
   renderAllTips();
 
@@ -1331,6 +1338,12 @@ function renderHome(){
   document.getElementById('waste-summary').innerHTML=weekWaste>0?`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><span style="font-size:12px;color:var(--text2)">Desperdício esta semana</span><div style="font-size:24px;font-weight:900;color:var(--red)">R$ ${weekWaste.toFixed(2)}</div></div><div style="font-size:11px;color:var(--text2)">≈ ${Math.floor(weekWaste/15)} refeições</div></div></div>`:'';
 
   renderShoppingCardHome();
+  // Gamification sections
+  trackGamificationDay();
+  renderLevelSection();
+  renderChallengeSection();
+  renderRankingSection();
+
   document.getElementById('home-empty').style.display=items.length===0?'block':'none';
   if(items.length===0){document.getElementById('streak-section').innerHTML='';document.getElementById('waste-summary').innerHTML=''}
 }
@@ -1437,12 +1450,13 @@ function renderItems(){
       <div class="item-bg right">🗑️ Deletar</div>
       <div class="item-content">
         <span class="item-emoji">${getCatEmoji(item.category)}</span>
-        <div class="item-info"><h4>${esc(item.name)}</h4><p>${item.quantity}${esc(item.unit)} · ${locName(item.location)}${item.house&&state.houses&&state.houses.length>1?' · '+getHouseName(item.house):''}</p></div>
+        <div class="item-info"><h4>${esc(item.name)}${(()=>{const ph=getItemPriceHistory(item.name);return ph.length>=2?`<span class="sparkline-wrap"><canvas class="sparkline-canvas" id="spark-${item.id}" data-name="${esc(item.name)}" width="50" height="16"></canvas>${(()=>{const t=getPriceTrend(ph);return t.trend!=='stable'?`<span class="price-trend ${t.trend}">${t.trend==='up'?'▲':'▼'}${t.pct}%</span>`:''})()}</span>`:''})()}</h4><p>${item.quantity}${esc(item.unit)} · ${locName(item.location)}${item.store?' · 🏪 '+esc(item.store):''}${item.house&&state.houses&&state.houses.length>1?' · '+getHouseName(item.house):''}</p></div>
         <span class="item-badge ${color}">${d}</span>
       </div>
     </div>`;
   }).join('');
   setupSwipe();
+  setTimeout(renderItemSparklines,50);
 }
 
 function setFilter(cat){
@@ -1490,6 +1504,7 @@ function openAddModal(presetData){
   const d=new Date();d.setDate(d.getDate()+(presetData?.days||7));
   document.getElementById('fExpiry').value=d.toISOString().split('T')[0];
   document.getElementById('fPrice').value='';
+  document.getElementById('fStore').value='';
   document.getElementById('fNotes').value='';
   document.getElementById('photoPreview').style.display='none';
   document.getElementById('photoPreview').src='';
@@ -1539,12 +1554,16 @@ function saveItem(){
     status:existing?(loc==='freezer'&&existing.status==='active'?'frozen':loc!=='freezer'&&existing.status==='frozen'?'active':existing.status):(loc==='freezer'?'frozen':'active'),
     frozenDate:loc==='freezer'?(existing&&existing.frozenDate?existing.frozenDate:today()):null,
     notes:document.getElementById('fNotes').value,
+    store:(document.getElementById('fStore').value||'').trim(),
     nutrition:window._barcodeNutrition||(existing?existing.nutrition:null)||null
   };
+  // Record price history
+  if(item.price>0&&!id){recordPrice(item.name,item.price,item.store,item.category)}
   if(id){const idx=state.items.findIndex(i=>i.id===id);if(idx>=0)state.items[idx]=item;}
   else{state.items.push(item);state.stats.totalTracked++;}
   save();closeModal('addModal');renderHome();renderItems();
   toast(id?'✅ Item atualizado!':'✅ Item adicionado!');
+  if(!id){addXP(10,"novo item!");trackChallengeProgress("add");if(window._photoCompressed){const gg=getGamification();gg.photosUsed=(gg.photosUsed||0)+1;saveGamification(gg);trackChallengeProgress("photo");}}
 }
 
 // Photo with AI recognition
@@ -1612,6 +1631,7 @@ document.getElementById('fLocation').addEventListener('change',function(){
 function consumeItem(id){
   const item=state.items.find(i=>i.id===id);if(!item)return;
   item.status='consumed';
+  addXP(20,"consumido!");trackChallengeProgress("consume");
   state.stats.moneySaved+=item.price||0;
   trackConsumption(item);
   save();renderItems();renderHome();
@@ -1642,6 +1662,7 @@ function confirmWaste(){
   state.stats.streak=0;state.stats.lastNoWasteDate=null;
   save();closeModal('wasteModal');closeModal('detailModal');renderItems();renderHome();
   toast('😢 '+item.name+' desperdiçado — R$ '+price.toFixed(2));
+  addXP(-15,"desperdício");
 }
 
 function freezeItem(id){
@@ -1707,6 +1728,7 @@ function editFromDetail(){
   document.getElementById('fUnit').value=item.unit;
   document.getElementById('fExpiry').value=item.expiryDate;
   document.getElementById('fPrice').value=item.price||'';
+  document.getElementById('fStore').value=item.store||'';
   document.getElementById('fNotes').value=item.notes||'';
   document.getElementById('aiPhotoResult').innerHTML='';
   window._photoCompressed=null;
@@ -1750,6 +1772,7 @@ async function unfreezeFromDetail(){
   item.expiryDate=newExpiry.toISOString().split('T')[0];
   item.frozenDate=null;
   item.notes=(item.notes?item.notes+' | ':'')+'Descongelado em '+today();
+  trackChallengeProgress("unfreeze");
   save();renderItems();renderHome();closeModal('detailModal');
   toast(`🔥 ${item.name} descongelado! Validade: ${days} dias. ${tip}`);
   btn.textContent='🔥 Descongelar';btn.disabled=false;
@@ -1792,13 +1815,21 @@ function renderStats(){
   const consumed=state.items.filter(i=>i.status==='consumed').length;
   const wasted=state.items.filter(i=>i.status==='wasted').length;
   const active=state.items.filter(i=>i.status==='active'||i.status==='frozen').length;
+  renderEconomyDashboard();
+  renderLevelCardStats();
+  const g=getGamification();
   document.getElementById('statGrid').innerHTML=`
     <div class="stat-card"><div class="stat-num">${state.stats.totalTracked}</div><div class="stat-label">Itens Rastreados</div></div>
     <div class="stat-card"><div class="stat-num">${active}</div><div class="stat-label">Itens Ativos</div></div>
     <div class="stat-card"><div class="stat-num" style="-webkit-text-fill-color:var(--green)">R$ ${state.stats.moneySaved.toFixed(0)}</div><div class="stat-label">Economizado</div></div>
-    <div class="stat-card"><div class="stat-num" style="-webkit-text-fill-color:var(--red)">R$ ${state.stats.moneyWasted.toFixed(0)}</div><div class="stat-label">Desperdiçado</div></div>`;
+    <div class="stat-card"><div class="stat-num" style="-webkit-text-fill-color:var(--red)">R$ ${state.stats.moneyWasted.toFixed(0)}</div><div class="stat-label">Desperdiçado</div></div>
+    <div class="stat-card"><div class="stat-num" style="-webkit-text-fill-color:var(--accent)">${g.xp}</div><div class="stat-label">XP Total</div></div>
+    <div class="stat-card"><div class="stat-num" style="-webkit-text-fill-color:var(--accent2)">Nv.${g.level}</div><div class="stat-label">Nível</div></div>`;
+  drawLineChart();
   drawPie(consumed,wasted);
   drawBarChart();
+  renderMarketComparison();
+  renderMonthlyReport();
   renderBadges();
 }
 
@@ -2230,8 +2261,7 @@ function applyBarcodeProduct(){
   toast('✅ Produto preenchido via código de barras!');
 }
 
-// Override saveItem to include nutrition
-const _origSaveItem=saveItem;
+// fix: removed dead code (_origSaveItem was saved but never used)
 
 // ===== SERVICE WORKER =====
 if('serviceWorker' in navigator){
@@ -2421,6 +2451,283 @@ function renderShoppingCardHome(){
   const el=document.getElementById('shopping-card-home');
   if(!list.length){el.innerHTML='';return}
   el.innerHTML=`<div class="card" onclick="document.querySelector('[data-page=compras]').click()" style="cursor:pointer;background:linear-gradient(135deg,rgba(108,92,231,.12),rgba(168,85,247,.08));border:1px solid rgba(108,92,231,.15)"><div style="display:flex;align-items:center;gap:12px"><span style="font-size:28px">🛒</span><div><h4 style="font-size:15px">${list.length} item(ns) na lista de compras</h4><p style="font-size:12px;color:var(--text2)">Toque para ver a lista</p></div></div></div>`;
+}
+
+// ===== GAMIFICATION SYSTEM =====
+const LEVELS=[
+  {level:1,name:'Iniciante',icon:'🌱',minItems:0,maxWaste:100,xpNeeded:0},
+  {level:2,name:'Organizado',icon:'📋',minItems:11,maxWaste:100,xpNeeded:200},
+  {level:3,name:'Econômico',icon:'💰',minItems:51,maxWaste:20,xpNeeded:600},
+  {level:4,name:'Mestre da Despensa',icon:'👑',minItems:100,maxWaste:10,xpNeeded:1500},
+  {level:5,name:'Zero Waste Hero',icon:'🏆',minItems:200,maxWaste:5,xpNeeded:3000},
+];
+
+const WEEKLY_CHALLENGES=[
+  {id:'consume5',title:'Consuma 5 itens antes de vencer!',icon:'🍽️',target:5,type:'consume',xp:100,badge:'🏅'},
+  {id:'add10',title:'Adicione 10 novos itens à despensa!',icon:'📦',target:10,type:'add',xp:80,badge:'📦'},
+  {id:'zero_waste',title:'Passe a semana inteira sem desperdício!',icon:'♻️',target:7,type:'no_waste_days',xp:150,badge:'♻️'},
+  {id:'photo3',title:'Use a IA para identificar 3 produtos!',icon:'📸',target:3,type:'photo',xp:60,badge:'📸'},
+  {id:'consume3_frozen',title:'Descongele e consuma 3 itens!',icon:'❄️',target:3,type:'unfreeze',xp:90,badge:'❄️'},
+  {id:'add_price5',title:'Adicione preço em 5 itens!',icon:'💲',target:5,type:'add_price',xp:70,badge:'💲'},
+  {id:'consume8',title:'Consuma 8 itens antes de vencer!',icon:'🔥',target:8,type:'consume',xp:120,badge:'🔥'},
+];
+
+function getGamification(){
+  const def={xp:0,level:1,daysUsed:0,firstUseDate:null,photosUsed:0,challengeId:null,challengeStart:null,challengeProgress:0,challengesCompleted:0,lastActiveDate:null,consumeLog:[],addLog:[],unfreezeLog:[]};
+  try{const g=JSON.parse(localStorage.getItem('validade_gamification'));return g?{...def,...g}:def}catch(e){return def}
+}
+function saveGamification(g){localStorage.setItem('validade_gamification',JSON.stringify(g))}
+
+function addXP(amount,reason){
+  const g=getGamification();
+  g.xp=Math.max(0,g.xp+amount);
+  // Level up check
+  for(let i=LEVELS.length-1;i>=0;i--){
+    if(g.xp>=LEVELS[i].xpNeeded){g.level=LEVELS[i].level;break}
+  }
+  saveGamification(g);
+  // Show XP toast
+  const el=document.getElementById('xpToast');
+  el.textContent=amount>0?`+${amount} XP ${reason||''}`:`${amount} XP ${reason||''}`;
+  el.style.background=amount>0?'linear-gradient(135deg,var(--accent),var(--accent2))':'linear-gradient(135deg,var(--red),#e84393)';
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2000);
+}
+
+function trackGamificationDay(){
+  const g=getGamification();
+  const t=today();
+  if(!g.firstUseDate)g.firstUseDate=t;
+  if(g.lastActiveDate!==t){
+    g.lastActiveDate=t;
+    // Count unique days
+    const first=new Date(g.firstUseDate);
+    const now=new Date(t);
+    g.daysUsed=Math.floor((now-first)/864e5)+1;
+  }
+  saveGamification(g);
+}
+
+function trackChallengeProgress(type){
+  const g=getGamification();
+  if(!g.challengeId)initWeeklyChallenge();
+  const challenge=WEEKLY_CHALLENGES.find(c=>c.id===g.challengeId);
+  if(!challenge||challenge.type!==type)return;
+  g.challengeProgress++;
+  if(g.challengeProgress>=challenge.target){
+    g.challengesCompleted++;
+    addXP(challenge.xp,'Desafio completo!');
+    toast(`🎉 Desafio concluído! +${challenge.xp} XP`);
+    // Reset for next challenge
+    g.challengeId=null;g.challengeProgress=0;g.challengeStart=null;
+    initWeeklyChallenge();
+  }
+  saveGamification(g);
+}
+
+function initWeeklyChallenge(){
+  const g=getGamification();
+  const now=new Date();
+  if(g.challengeId&&g.challengeStart){
+    const start=new Date(g.challengeStart);
+    if((now-start)<7*864e5)return; // Still within the week
+  }
+  // Pick a new random challenge
+  const idx=Math.floor((now.getTime()/604800000))%WEEKLY_CHALLENGES.length;
+  g.challengeId=WEEKLY_CHALLENGES[idx].id;
+  g.challengeStart=today();
+  g.challengeProgress=0;
+  saveGamification(g);
+}
+
+function getWasteRate(){
+  const consumed=state.items.filter(i=>i.status==='consumed').length;
+  const wasted=state.items.filter(i=>i.status==='wasted').length;
+  const total=consumed+wasted;
+  return total>0?((wasted/total)*100):0;
+}
+
+function getMonthlyEconomy(){
+  const months={};
+  state.items.forEach(i=>{
+    if(i.status==='consumed'&&i.price){
+      const m=(i.addedDate||today()).slice(0,7);
+      if(!months[m])months[m]={saved:0,wasted:0};
+      months[m].saved+=i.price;
+    }
+  });
+  state.stats.wasteLog.forEach(w=>{
+    const m=w.date.slice(0,7);
+    if(!months[m])months[m]={saved:0,wasted:0};
+    months[m].wasted+=w.price;
+  });
+  return months;
+}
+
+function renderLevelSection(){
+  const g=getGamification();
+  const lvl=LEVELS.find(l=>l.level===g.level)||LEVELS[0];
+  const nextLvl=LEVELS.find(l=>l.level===g.level+1);
+  const xpForNext=nextLvl?nextLvl.xpNeeded:lvl.xpNeeded;
+  const xpInLevel=g.xp-lvl.xpNeeded;
+  const xpRange=xpForNext-lvl.xpNeeded;
+  const pct=nextLvl?Math.min(100,Math.round((xpInLevel/xpRange)*100)):100;
+
+  const el=document.getElementById('level-section');
+  if(el)el.innerHTML=`<div class="level-card">
+    <div class="level-header">
+      <span class="level-icon">${lvl.icon}</span>
+      <div class="level-info"><h3>Nível ${lvl.level}: ${lvl.name}</h3><p>${nextLvl?`Próximo: ${nextLvl.name} (${xpForNext} XP)`:'Nível máximo!'}</p></div>
+      <div class="level-xp"><div class="xp-num">${g.xp}</div><div class="xp-label">XP</div></div>
+    </div>
+    <div class="xp-bar"><div class="xp-bar-fill" style="width:${pct}%"></div></div>
+  </div>`;
+}
+
+function renderChallengeSection(){
+  const g=getGamification();
+  initWeeklyChallenge();
+  const challenge=WEEKLY_CHALLENGES.find(c=>c.id===g.challengeId);
+  if(!challenge)return;
+  const pct=Math.min(100,Math.round((g.challengeProgress/challenge.target)*100));
+  const daysLeft=g.challengeStart?Math.max(0,7-Math.floor((new Date()-new Date(g.challengeStart))/864e5)):7;
+
+  const el=document.getElementById('challenge-section');
+  if(el)el.innerHTML=`<div class="challenge-card">
+    <h3>${challenge.icon} Desafio da Semana</h3>
+    <p>${challenge.title}</p>
+    <div class="challenge-progress"><div class="challenge-progress-fill" style="width:${pct}%"></div><div class="challenge-progress-text">${g.challengeProgress}/${challenge.target}</div></div>
+    <div class="challenge-reward">${challenge.badge} Recompensa: +${challenge.xp} XP · ${daysLeft} dia(s) restante(s)</div>
+  </div>`;
+}
+
+function renderRankingSection(){
+  if(!state.shareCode)return;
+  const el=document.getElementById('ranking-section');
+  if(!el)return;
+  // Build ranking from local data (user's own stats)
+  const user=getUser();
+  const name=user?user.name:'Você';
+  const consumed=state.items.filter(i=>i.status==='consumed').length;
+  const added=state.stats.totalTracked;
+  el.innerHTML=`<div class="ranking-card">
+    <h3>🏆 Ranking da Semana</h3>
+    <div class="ranking-row"><span class="ranking-pos">🥇</span><span class="ranking-name">${esc(name)}</span><span class="ranking-score">${consumed} consumidos</span></div>
+    <div style="font-size:12px;color:var(--text2);margin-top:8px;text-align:center">Compartilhe o código da despensa para competir com a família!</div>
+  </div>`;
+}
+
+function renderEconomyDashboard(){
+  const el=document.getElementById('economyDashboard');
+  if(!el)return;
+  const now=new Date();
+  const thisMonth=now.toISOString().slice(0,7);
+  const monthlyData=getMonthlyEconomy();
+  const thisMonthData=monthlyData[thisMonth]||{saved:0,wasted:0};
+  const consumed=state.items.filter(i=>i.status==='consumed').length;
+  const wasted=state.items.filter(i=>i.status==='wasted').length;
+  const total=consumed+wasted;
+  const aproveitamento=total>0?Math.round((consumed/total)*100):100;
+
+  el.innerHTML=`
+    <div class="economy-hero">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:4px">💰 Você economizou este mês</div>
+      <div class="eco-amount">R$ ${thisMonthData.saved.toFixed(2)}</div>
+      <div class="eco-label">consumindo itens antes de vencer</div>
+    </div>
+    <div class="economy-waste">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:2px">😢 Desperdício este mês</div>
+      <div class="eco-waste-amount">R$ ${thisMonthData.wasted.toFixed(2)}</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:6px">🎯 Aproveitamento de alimentos</div>
+      <div class="economy-bar">
+        <div class="economy-bar-fill" style="width:${aproveitamento}%;background:${aproveitamento>=80?'linear-gradient(90deg,var(--green),#55efc4)':aproveitamento>=50?'linear-gradient(90deg,var(--yellow),var(--orange))':'linear-gradient(90deg,var(--red),#e84393)'}"></div>
+        <div class="economy-bar-text">Você aproveitou ${aproveitamento}% dos seus alimentos!</div>
+      </div>
+    </div>`;
+}
+
+function renderLevelCardStats(){
+  const g=getGamification();
+  const lvl=LEVELS.find(l=>l.level===g.level)||LEVELS[0];
+  const nextLvl=LEVELS.find(l=>l.level===g.level+1);
+  const xpForNext=nextLvl?nextLvl.xpNeeded:lvl.xpNeeded;
+  const xpInLevel=g.xp-lvl.xpNeeded;
+  const xpRange=xpForNext-lvl.xpNeeded;
+  const pct=nextLvl?Math.min(100,Math.round((xpInLevel/xpRange)*100)):100;
+  const wasteRate=getWasteRate();
+
+  const el=document.getElementById('levelCard');
+  if(el)el.innerHTML=`<div class="level-card">
+    <div class="level-header">
+      <span class="level-icon">${lvl.icon}</span>
+      <div class="level-info"><h3>Nível ${lvl.level}: ${lvl.name}</h3><p>XP: ${g.xp}${nextLvl?' / '+xpForNext:' (MAX)'} · Desperdício: ${wasteRate.toFixed(0)}%</p></div>
+    </div>
+    <div class="xp-bar"><div class="xp-bar-fill" style="width:${pct}%"></div></div>
+  </div>`;
+}
+
+function drawLineChart(){
+  const canvas=document.getElementById('lineChart');if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  canvas.width=300;canvas.height=200;ctx.clearRect(0,0,300,200);
+  const monthlyData=getMonthlyEconomy();
+  const now=new Date();
+  const months=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    months.push(d.toISOString().slice(0,7));
+  }
+  const values=months.map(m=>(monthlyData[m]||{saved:0}).saved);
+  const maxVal=Math.max(...values,1);
+
+  if(values.every(v=>v===0)){
+    ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--text2');
+    ctx.font='14px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Sem dados de economia ainda',150,105);return;
+  }
+
+  const padding={left:40,right:20,top:20,bottom:30};
+  const w=canvas.width-padding.left-padding.right;
+  const h=canvas.height-padding.top-padding.bottom;
+
+  // Grid lines
+  ctx.strokeStyle='rgba(255,255,255,.05)';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=padding.top+h*(i/4);
+    ctx.beginPath();ctx.moveTo(padding.left,y);ctx.lineTo(canvas.width-padding.right,y);ctx.stroke();
+  }
+
+  // Line
+  const gradient=ctx.createLinearGradient(0,padding.top,0,canvas.height-padding.bottom);
+  gradient.addColorStop(0,'#00b894');gradient.addColorStop(1,'rgba(0,184,148,.1)');
+
+  ctx.beginPath();
+  const points=[];
+  months.forEach((m,i)=>{
+    const x=padding.left+i*(w/(months.length-1||1));
+    const y=padding.top+h-(values[i]/maxVal)*h;
+    points.push({x,y});
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle='#00b894';ctx.lineWidth=2;ctx.stroke();
+
+  // Fill area
+  ctx.lineTo(points[points.length-1].x,padding.top+h);
+  ctx.lineTo(points[0].x,padding.top+h);ctx.closePath();
+  ctx.fillStyle=gradient;ctx.fill();
+
+  // Dots + labels
+  const textColor=getComputedStyle(document.body).getPropertyValue('--text').trim();
+  const text2Color=getComputedStyle(document.body).getPropertyValue('--text2').trim();
+  ctx.font='10px sans-serif';ctx.textAlign='center';
+  points.forEach((p,i)=>{
+    ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fillStyle='#00b894';ctx.fill();
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(p.x,p.y,2,0,Math.PI*2);ctx.fill();
+    if(values[i]>0){ctx.fillStyle=textColor;ctx.fillText('R$'+values[i].toFixed(0),p.x,p.y-8);}
+    ctx.fillStyle=text2Color;ctx.fillText(months[i].slice(5),p.x,canvas.height-padding.bottom+14);
+  });
 }
 
 // ===== INIT =====
@@ -2773,6 +3080,346 @@ renderHome=function(){
   renderWeeklyPlanner();
   renderDailySuggestion();
 };
+
+// ===== PRICE HISTORY & MARKET COMPARISON =====
+function getPriceHistory(){try{return JSON.parse(localStorage.getItem('validade_price_history'))||[]}catch(e){return[]}}
+function savePriceHistory(h){try{localStorage.setItem('validade_price_history',JSON.stringify(h))}catch(e){console.error('Price history save error',e)}}
+
+function recordPrice(name,price,store,category,date){
+  if(!price||price<=0)return;
+  const h=getPriceHistory();
+  h.push({name:name.toLowerCase().trim(),price,store:(store||'').trim(),category:category||'outros',date:date||today()});
+  // Keep max 500 entries
+  if(h.length>500)h.splice(0,h.length-500);
+  savePriceHistory(h);
+}
+
+function getItemPriceHistory(name){
+  return getPriceHistory().filter(e=>e.name===name.toLowerCase().trim()).sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+function getAllStores(){
+  const stores=new Set();
+  getPriceHistory().forEach(e=>{if(e.store)stores.add(e.store)});
+  state.items.forEach(i=>{if(i.store)stores.add(i.store)});
+  return[...stores].sort();
+}
+
+function showStoreAutocomplete(val){
+  const list=document.getElementById('storeAutocomplete');
+  const stores=getAllStores().filter(s=>!val||s.toLowerCase().includes(val.toLowerCase()));
+  if(!stores.length||!val){list.classList.remove('show');return}
+  list.innerHTML=stores.map(s=>`<div class="autocomplete-item" onmousedown="selectStore('${esc(s)}')">${esc(s)}</div>`).join('');
+  list.classList.add('show');
+}
+function selectStore(s){
+  document.getElementById('fStore').value=s;
+  document.getElementById('storeAutocomplete').classList.remove('show');
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.autocomplete-wrap'))document.querySelectorAll('.autocomplete-list').forEach(l=>l.classList.remove('show'));
+});
+
+function drawSparkline(canvasId,prices,w,h){
+  const c=document.getElementById(canvasId);if(!c)return;
+  const ctx=c.getContext('2d');c.width=w;c.height=h;ctx.clearRect(0,0,w,h);
+  if(prices.length<2)return;
+  const vals=prices.map(p=>p.price);
+  const min=Math.min(...vals),max=Math.max(...vals);
+  const range=max-min||1;
+  const step=w/(vals.length-1);
+  ctx.beginPath();ctx.strokeStyle='#6c5ce7';ctx.lineWidth=1.5;
+  vals.forEach((v,i)=>{
+    const x=i*step,y=h-((v-min)/range)*(h-4)-2;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  // dot on last point
+  const lastX=(vals.length-1)*step,lastY=h-((vals[vals.length-1]-min)/range)*(h-4)-2;
+  ctx.beginPath();ctx.arc(lastX,lastY,2,0,Math.PI*2);ctx.fillStyle=vals[vals.length-1]>vals[vals.length-2]?'#d63031':'#00b894';ctx.fill();
+}
+
+function getPriceTrend(prices){
+  if(prices.length<2)return{trend:'stable',pct:0};
+  const last=prices[prices.length-1].price;
+  const prev=prices[prices.length-2].price;
+  if(prev===0)return{trend:'stable',pct:0};
+  const pct=((last-prev)/prev)*100;
+  if(pct>5)return{trend:'up',pct:Math.round(pct)};
+  if(pct<-5)return{trend:'down',pct:Math.round(Math.abs(pct))};
+  return{trend:'stable',pct:0};
+}
+
+function getAvgPrice(prices){
+  if(!prices.length)return 0;
+  return prices.reduce((s,p)=>s+p.price,0)/prices.length;
+}
+
+// Render price alerts on home
+function renderPriceAlerts(){
+  const section=document.getElementById('price-alerts-section');if(!section)return;
+  const history=getPriceHistory();
+  if(history.length<2){section.innerHTML='';return}
+  const items=state.items.filter(i=>i.status==='active'||i.status==='frozen');
+  let html='';
+  items.forEach(item=>{
+    const ph=getItemPriceHistory(item.name);
+    if(ph.length<2)return;
+    const t=getPriceTrend(ph);
+    if(t.trend==='up'&&t.pct>=15){
+      html+=`<div class="price-alert">⚠️ <strong>${esc(item.name)}</strong> subiu ${t.pct}% desde a última compra (R$ ${ph[ph.length-2].price.toFixed(2)} → R$ ${ph[ph.length-1].price.toFixed(2)})</div>`;
+    }
+  });
+  section.innerHTML=html;
+}
+
+// Render opportunity alerts on home
+function renderOpportunityAlerts(){
+  const section=document.getElementById('opportunity-section');if(!section)return;
+  const history=getPriceHistory();
+  if(history.length<3){section.innerHTML='';return}
+
+  // Find items bought at 2+ stores
+  const itemStores={};
+  history.forEach(e=>{
+    if(!e.store)return;
+    if(!itemStores[e.name])itemStores[e.name]={};
+    if(!itemStores[e.name][e.store])itemStores[e.name][e.store]=[];
+    itemStores[e.name][e.store].push(e.price);
+  });
+
+  let html='';
+  Object.entries(itemStores).forEach(([name,stores])=>{
+    const storeNames=Object.keys(stores);
+    if(storeNames.length<2)return;
+    // avg price per store
+    const avgs=storeNames.map(s=>({store:s,avg:stores[s].reduce((a,b)=>a+b,0)/stores[s].length,count:stores[s].length}));
+    avgs.sort((a,b)=>a.avg-b.avg);
+    const cheapest=avgs[0];
+    const mostExpensive=avgs[avgs.length-1];
+    const diff=mostExpensive.avg-cheapest.avg;
+    if(diff<0.5)return;
+
+    // Check if user buys frequently (4+ times)
+    const totalBuys=avgs.reduce((s,a)=>s+a.count,0);
+    const weeksOfData=Math.max(1,Math.ceil((new Date()-new Date(history.filter(e=>e.name===name)[0].date))/(7*864e5)));
+    const buysPerWeek=totalBuys/weeksOfData;
+    const monthlySaving=diff*buysPerWeek*4.3;
+
+    const displayName=name.charAt(0).toUpperCase()+name.slice(1);
+    html+=`<div class="opportunity-card"><h4>💡 Dica de Economia</h4>${esc(displayName)} é R$ ${diff.toFixed(2)} mais barato no <strong>${esc(cheapest.store)}</strong>${monthlySaving>=2?` — economia de ~R$ ${monthlySaving.toFixed(0)}/mês!`:''}</div>`;
+  });
+  section.innerHTML=html;
+}
+
+// Market comparison for stats page
+function renderMarketComparison(){
+  const section=document.getElementById('market-comparison-section');if(!section)return;
+  const history=getPriceHistory();
+  const stores=getAllStores();
+  if(stores.length<1){section.innerHTML='';return}
+
+  // Total spent per store
+  const storeTotal={};
+  const storeCatAvg={};
+  history.forEach(e=>{
+    if(!e.store)return;
+    storeTotal[e.store]=(storeTotal[e.store]||0)+e.price;
+    if(!storeCatAvg[e.store])storeCatAvg[e.store]={};
+    if(!storeCatAvg[e.store][e.category])storeCatAvg[e.store][e.category]=[];
+    storeCatAvg[e.store][e.category].push(e.price);
+  });
+
+  if(!Object.keys(storeTotal).length){section.innerHTML='';return}
+
+  let html=`<div class="card"><h3 style="font-size:16px;margin-bottom:12px">🏪 Onde é mais barato?</h3>`;
+  html+=`<table class="market-table"><tr><th>Mercado</th><th>Total Gasto</th><th>Itens</th><th>Preço Médio</th></tr>`;
+
+  const sortedStores=Object.entries(storeTotal).sort((a,b)=>b[1]-a[1]);
+  sortedStores.forEach(([store,total])=>{
+    const items=history.filter(e=>e.store===store).length;
+    const avg=total/items;
+    html+=`<tr><td><strong>${esc(store)}</strong></td><td>R$ ${total.toFixed(2)}</td><td>${items}</td><td>R$ ${avg.toFixed(2)}</td></tr>`;
+  });
+  html+=`</table>`;
+
+  // Find category savings highlights
+  const highlights=[];
+  CATEGORIES.forEach(cat=>{
+    const catStoreAvgs={};
+    Object.entries(storeCatAvg).forEach(([store,cats])=>{
+      if(cats[cat.id]&&cats[cat.id].length>=2){
+        catStoreAvgs[store]=cats[cat.id].reduce((a,b)=>a+b,0)/cats[cat.id].length;
+      }
+    });
+    const entries=Object.entries(catStoreAvgs);
+    if(entries.length<2)return;
+    entries.sort((a,b)=>a[1]-b[1]);
+    const cheapest=entries[0];
+    const mostExp=entries[entries.length-1];
+    const pctDiff=((mostExp[1]-cheapest[1])/mostExp[1]*100).toFixed(0);
+    if(pctDiff>=10){
+      highlights.push(`${cat.emoji} ${cat.name} é ${pctDiff}% mais barato no <strong>${esc(cheapest[0])}</strong>`);
+    }
+  });
+
+  highlights.slice(0,3).forEach(h=>{
+    html+=`<div class="market-highlight">💚 ${h}</div>`;
+  });
+
+  html+=`</div>`;
+  section.innerHTML=html;
+}
+
+// Monthly spending report for stats page
+function renderMonthlyReport(){
+  const section=document.getElementById('monthly-report-section');if(!section)return;
+  const history=getPriceHistory();
+  if(history.length<1){section.innerHTML='';return}
+
+  const now=new Date();
+  const curMonth=now.toISOString().slice(0,7);
+  const prevDate=new Date(now);prevDate.setMonth(prevDate.getMonth()-1);
+  const prevMonth=prevDate.toISOString().slice(0,7);
+
+  const curEntries=history.filter(e=>e.date.startsWith(curMonth));
+  const prevEntries=history.filter(e=>e.date.startsWith(prevMonth));
+
+  const curTotal=curEntries.reduce((s,e)=>s+e.price,0);
+  const prevTotal=prevEntries.reduce((s,e)=>s+e.price,0);
+
+  // Per category
+  const catSpend={};
+  curEntries.forEach(e=>{catSpend[e.category]=(catSpend[e.category]||0)+e.price});
+
+  // Per store
+  const storeSpend={};
+  curEntries.forEach(e=>{if(e.store)storeSpend[e.store]=(storeSpend[e.store]||0)+e.price});
+
+  // Most expensive / cheapest item
+  let mostExp=null,cheapest=null;
+  curEntries.forEach(e=>{
+    if(!mostExp||e.price>mostExp.price)mostExp=e;
+    if(!cheapest||e.price<cheapest.price)cheapest=e;
+  });
+
+  const monthNames=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const monthLabel=monthNames[now.getMonth()]+'/'+now.getFullYear();
+
+  let html=`<div class="card"><h3 style="font-size:16px;margin-bottom:12px">📋 Relatório Mensal — ${monthLabel}</h3>`;
+
+  // Category pie chart
+  const catColors=['#6c5ce7','#00b894','#fdcb6e','#e17055','#d63031','#74b9ff','#a855f7','#55efc4'];
+  const catEntries=Object.entries(catSpend).sort((a,b)=>b[1]-a[1]);
+
+  if(catEntries.length){
+    html+=`<h4 style="font-size:13px;margin:12px 0 8px">💰 Gasto por Categoria</h4>`;
+    html+=`<canvas id="spendingPieChart" width="300" height="180"></canvas>`;
+    html+=`<div class="spending-legend">`;
+    catEntries.forEach(([cat,val],i)=>{
+      html+=`<div><span class="swatch" style="background:${catColors[i%catColors.length]}"></span>${getCatEmoji(cat)} ${getCatName(cat)}: R$ ${val.toFixed(2)}</div>`;
+    });
+    html+=`</div>`;
+  }
+
+  if(Object.keys(storeSpend).length){
+    html+=`<h4 style="font-size:13px;margin:16px 0 8px">🏪 Gasto por Mercado</h4>`;
+    Object.entries(storeSpend).sort((a,b)=>b[1]-a[1]).forEach(([store,val])=>{
+      const pct=curTotal>0?(val/curTotal*100).toFixed(0):0;
+      html+=`<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px"><span>${esc(store)}</span><span>R$ ${val.toFixed(2)} (${pct}%)</span></div>`;
+    });
+  }
+
+  html+=`<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bg3)">`;
+  html+=`<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700"><span>Total do mês</span><span>R$ ${curTotal.toFixed(2)}</span></div>`;
+  if(prevTotal>0){
+    const diff=curTotal-prevTotal;
+    const pct=((diff/prevTotal)*100).toFixed(0);
+    const color=diff>0?'var(--red)':'var(--green)';
+    const arrow=diff>0?'↑':'↓';
+    html+=`<div style="font-size:12px;color:${color};margin-top:4px">${arrow} ${Math.abs(pct)}% vs mês anterior (R$ ${prevTotal.toFixed(2)})</div>`;
+  }
+  if(mostExp)html+=`<div style="font-size:12px;color:var(--text2);margin-top:8px">💸 Mais caro: ${esc(mostExp.name)} — R$ ${mostExp.price.toFixed(2)}${mostExp.store?' ('+esc(mostExp.store)+')':''}</div>`;
+  if(cheapest&&cheapest!==mostExp)html+=`<div style="font-size:12px;color:var(--text2);margin-top:2px">🏷️ Mais barato: ${esc(cheapest.name)} — R$ ${cheapest.price.toFixed(2)}</div>`;
+  html+=`</div>`;
+
+  html+=`<button class="report-btn" onclick="shareMonthlyReport()">📤 Compartilhar Relatório</button>`;
+  html+=`</div>`;
+  section.innerHTML=html;
+
+  // Draw spending pie
+  if(catEntries.length){
+    setTimeout(()=>drawSpendingPie(catEntries,catColors),50);
+  }
+}
+
+function drawSpendingPie(entries,colors){
+  const c=document.getElementById('spendingPieChart');if(!c)return;
+  const ctx=c.getContext('2d');c.width=300;c.height=180;ctx.clearRect(0,0,300,180);
+  const total=entries.reduce((s,e)=>s+e[1],0);
+  if(!total)return;
+  const cx=90,cy=90,r=70;
+  let angle=0;
+  entries.forEach(([cat,val],i)=>{
+    const slice=(val/total)*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+slice);
+    ctx.fillStyle=colors[i%colors.length];ctx.fill();
+    angle+=slice;
+  });
+  // Inner circle for donut
+  ctx.beginPath();ctx.arc(cx,cy,40,0,Math.PI*2);
+  ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--card').trim();ctx.fill();
+  // Center text
+  ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--text').trim();
+  ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('R$ '+total.toFixed(0),cx,cy);
+}
+
+function shareMonthlyReport(){
+  const history=getPriceHistory();
+  const now=new Date();
+  const curMonth=now.toISOString().slice(0,7);
+  const entries=history.filter(e=>e.date.startsWith(curMonth));
+  const total=entries.reduce((s,e)=>s+e.price,0);
+  const monthNames=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  let text=`📋 *Relatório Mensal — ${monthNames[now.getMonth()]}/${now.getFullYear()}*\n\n`;
+  text+=`💰 Total gasto: R$ ${total.toFixed(2)}\n`;
+  text+=`📦 ${entries.length} compras registradas\n\n`;
+
+  const catSpend={};
+  entries.forEach(e=>{catSpend[e.category]=(catSpend[e.category]||0)+e.price});
+  text+=`*Por categoria:*\n`;
+  Object.entries(catSpend).sort((a,b)=>b[1]-a[1]).forEach(([cat,val])=>{
+    text+=`${getCatEmoji(cat)} ${getCatName(cat)}: R$ ${val.toFixed(2)}\n`;
+  });
+
+  const storeSpend={};
+  entries.forEach(e=>{if(e.store)storeSpend[e.store]=(storeSpend[e.store]||0)+e.price});
+  if(Object.keys(storeSpend).length){
+    text+=`\n*Por mercado:*\n`;
+    Object.entries(storeSpend).sort((a,b)=>b[1]-a[1]).forEach(([store,val])=>{
+      text+=`🏪 ${store}: R$ ${val.toFixed(2)}\n`;
+    });
+  }
+
+  text+=`\n_Gerado pelo app Validade 🥦_`;
+
+  if(navigator.share){
+    navigator.share({title:'Relatório Mensal',text}).catch(()=>{});
+  }else{
+    window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
+  }
+}
+
+// Render sparklines after items render
+function renderItemSparklines(){
+  document.querySelectorAll('.sparkline-canvas').forEach(c=>{
+    const name=c.dataset.name;
+    const ph=getItemPriceHistory(name);
+    if(ph.length>=2)drawSparkline(c.id,ph,50,16);
+  });
+}
 
 function init(){
   document.body.classList.toggle('light',!state.settings.darkMode);
