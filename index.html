@@ -959,7 +959,8 @@ function loadState(){
 function defaultState(){
   return {items:[],stats:{streak:0,lastNoWasteDate:null,recipesUsed:0,frozenManaged:0,totalTracked:0,moneySaved:0,moneyWasted:0,wasteLog:[],recipesCooked:[]},settings:{darkMode:true,notifications:false,morningSummary:false,notif3days:true,notif1day:true,notifToday:true,morningHour:8,recipeSuggestion:false},shareCode:null,houses:[{id:'casa',name:'🏠 Minha Casa'}]};
 }
-function save(){try{localStorage.setItem('validade_state',JSON.stringify(state))}catch(e){console.error('Storage error:',e);toast('⚠️ Armazenamento cheio! Exclua fotos ou itens antigos.')}if(isLoggedIn())syncToServer()}
+const debouncedSync=debounce(syncToServer,2000);
+function save(){try{localStorage.setItem('validade_state',JSON.stringify(state))}catch(e){console.error('Storage error:',e);toast('⚠️ Armazenamento cheio! Exclua fotos ou itens antigos.')}if(isLoggedIn())debouncedSync()}
 function uuid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,9)}
 function today(){return new Date().toISOString().split('T')[0]}
 function daysUntil(d){if(!d||d==='undefined'||d==='null')return 999;const t=new Date(d+'T23:59:59');if(isNaN(t))return 999;return Math.ceil((t-new Date())/(864e5))}
@@ -1349,6 +1350,12 @@ function renderHome(){
 
   document.getElementById('home-empty').style.display=items.length===0?'block':'none';
   if(items.length===0){document.getElementById('streak-section').innerHTML='';document.getElementById('waste-summary').innerHTML=''}
+
+  // Meal planning & chef sections
+  renderMealPlanning();
+  renderChefMode();
+  renderWeeklyPlanner();
+  renderDailySuggestion();
 }
 
 async function renderAllTips(){
@@ -1461,6 +1468,8 @@ function renderItems(){
   setupSwipe();
   setTimeout(renderItemSparklines,50);
 }
+
+const debouncedRenderItems=debounce(renderItems,200);
 
 function setFilter(cat){
   document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
@@ -3104,15 +3113,8 @@ const CHEF_BADGES=[
 // Add chef badges to main BADGES array
 CHEF_BADGES.forEach(b=>{if(!BADGES.find(x=>x.id===b.id))BADGES.push(b)});
 
-// Patch renderHome to include new sections
-const _origRenderHome=renderHome;
-renderHome=function(){
-  _origRenderHome();
-  renderMealPlanning();
-  renderChefMode();
-  renderWeeklyPlanner();
-  renderDailySuggestion();
-};
+// Note: renderMealPlanning, renderChefMode, renderWeeklyPlanner, renderDailySuggestion
+// are called directly at the end of renderHome() above.
 
 // ===== PRICE HISTORY & MARKET COMPARISON =====
 function getPriceHistory(){try{return JSON.parse(localStorage.getItem('validade_price_history'))||[]}catch(e){return[]}}
@@ -3459,8 +3461,7 @@ function init(){
   document.getElementById('themeBtn').textContent=state.settings.darkMode?'🌙':'☀️';
   checkUrlImport();
   renderHome();
-  checkNotifications();
-  setInterval(checkNotifications,3600000);
+  startNotificationChecker();
   // Require login on startup
   if(!isLoggedIn())showAuthScreen();
 }
