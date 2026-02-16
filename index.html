@@ -200,6 +200,64 @@ canvas{width:100%;height:auto}
 .ai-photo-result .ai-apply-btn{margin-top:8px;padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;transition:var(--transition)}
 .ai-photo-result .ai-apply-btn:active{transform:scale(.95)}
 
+/* Meal Planning */
+.meal-card{background:linear-gradient(135deg,rgba(253,203,110,.12),rgba(225,112,85,.08));border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid rgba(253,203,110,.2)}
+.meal-card h3{font-size:16px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.meal-card p{font-size:13px;color:var(--text2);line-height:1.5}
+.meal-btn{padding:10px 16px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;transition:var(--transition);background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;width:100%;margin-top:10px}
+.meal-btn:active{transform:scale(.96)}
+.meal-btn.secondary{background:var(--bg3);color:var(--text)}
+.meal-recipe{background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid rgba(108,92,231,.15)}
+.meal-recipe h4{font-size:15px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.meal-recipe .ing-list{font-size:12px;color:var(--text2);margin:6px 0}
+.meal-recipe .ing-list .has{color:var(--green);font-weight:600}
+.meal-recipe .ing-list .need{color:var(--orange);font-style:italic}
+.meal-recipe .steps{font-size:12px;line-height:1.6;margin-top:8px;white-space:pre-line}
+.meal-recipe .recipe-actions{display:flex;gap:8px;margin-top:10px}
+.meal-recipe .recipe-actions button{flex:1;padding:8px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;transition:var(--transition)}
+.meal-recipe .recipe-actions .use-btn{background:var(--green);color:#fff}
+.meal-recipe .recipe-actions .plan-btn{background:var(--bg3);color:var(--text)}
+
+/* Weekly Planner */
+.planner-section{margin-bottom:16px}
+.planner-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:8px}
+.planner-day{background:var(--card);border-radius:10px;padding:8px 4px;text-align:center;min-height:80px;cursor:pointer;transition:var(--transition);border:2px solid transparent;position:relative}
+.planner-day:active{transform:scale(.96)}
+.planner-day.today{border-color:var(--accent)}
+.planner-day .day-label{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase}
+.planner-day .day-num{font-size:14px;font-weight:800;margin:2px 0}
+.planner-day .day-recipe{font-size:9px;color:var(--accent2);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.planner-day .day-emoji{font-size:18px;margin-top:2px}
+.planner-day.has-recipe{background:linear-gradient(135deg,rgba(108,92,231,.1),rgba(168,85,247,.06))}
+.planner-ingredients{background:var(--card);border-radius:var(--radius);padding:14px;margin-top:10px}
+.planner-ingredients h4{font-size:13px;margin-bottom:8px}
+.planner-ingredients .ing-row{display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0}
+.planner-ingredients .ing-row.available{color:var(--green)}
+.planner-ingredients .ing-row.missing{color:var(--orange)}
+
+/* Chef Mode */
+.chef-card{background:linear-gradient(135deg,rgba(0,184,148,.12),rgba(108,92,231,.08));border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid rgba(0,184,148,.15)}
+.chef-card h3{font-size:16px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.chef-stats{display:flex;gap:12px;margin-bottom:10px}
+.chef-stat{flex:1;text-align:center;background:var(--bg3);border-radius:10px;padding:10px 6px}
+.chef-stat .stat-val{font-size:22px;font-weight:900;background:linear-gradient(135deg,var(--green),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.chef-stat .stat-lbl{font-size:10px;color:var(--text2);margin-top:2px}
+.chef-badges{display:flex;gap:8px;flex-wrap:wrap}
+.chef-badge{display:flex;align-items:center;gap:4px;padding:6px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--bg3);opacity:.4}
+.chef-badge.earned{opacity:1;background:linear-gradient(135deg,rgba(0,184,148,.2),rgba(108,92,231,.1));border:1px solid rgba(0,184,148,.2)}
+
+/* Daily Suggestion */
+.daily-suggestion{background:linear-gradient(135deg,rgba(253,203,110,.15),rgba(225,112,85,.08));border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid rgba(253,203,110,.2);animation:slideUp .4s ease}
+.daily-suggestion h3{font-size:15px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.daily-suggestion p{font-size:13px;color:var(--text2);line-height:1.5}
+.daily-suggestion .suggestion-action{margin-top:10px;display:flex;gap:8px}
+.daily-suggestion .suggestion-action button{padding:8px 14px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
+
+/* Planner Modal */
+.planner-modal-day{font-size:16px;font-weight:700;text-align:center;margin-bottom:12px}
+.planner-recipe-pick{background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;transition:var(--transition)}
+.planner-recipe-pick:active{transform:scale(.97);background:var(--accent);color:#fff}
+
 /* Barcode Scanner */
 .barcode-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:250;display:none;align-items:center;justify-content:center;flex-direction:column}
 .barcode-modal-overlay.active{display:flex}
@@ -220,12 +278,73 @@ canvas{width:100%;height:auto}
 .nutrition-item .nut-value{font-size:18px;font-weight:800;color:var(--green)}
 .nutrition-item .nut-label{font-size:10px;color:var(--text2);margin-top:2px}
 
+/* Shopping List */
+.shop-item{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border-radius:var(--radius);margin-bottom:8px;transition:var(--transition)}
+.shop-item.bought{opacity:.5;text-decoration:line-through}
+.shop-check{width:24px;height:24px;border-radius:50%;border:2px solid var(--accent);background:none;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;color:transparent;transition:var(--transition)}
+.shop-check.checked{background:var(--green);border-color:var(--green);color:#fff}
+.shop-info{flex:1;min-width:0}
+.shop-info h4{font-size:14px;font-weight:600}
+.shop-info p{font-size:11px;color:var(--text2);margin-top:2px}
+.shop-suggestion{font-size:11px;color:var(--accent2);margin-top:2px;font-style:italic}
+.shop-remove{background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;padding:4px}
+.shop-actions{display:flex;gap:8px;margin-bottom:16px}
+.shop-actions .btn{flex:1;font-size:13px;padding:10px}
+.shop-add-row{display:flex;gap:8px;margin-bottom:16px}
+.shop-add-row input{flex:1}
+.shop-add-row button{white-space:nowrap}
+
 /* Barcode product card */
 .barcode-product-card{background:linear-gradient(135deg,rgba(108,92,231,.12),rgba(0,184,148,.08));border:1px solid rgba(108,92,231,.2);border-radius:12px;padding:16px;margin-bottom:12px}
 .barcode-product-card img{width:80px;height:80px;object-fit:contain;border-radius:8px;background:#fff;float:right;margin-left:12px}
 .barcode-product-card h3{font-size:15px;margin-bottom:4px}
 .barcode-product-card .brand{font-size:12px;color:var(--text2);margin-bottom:8px}
 .barcode-product-card .categories{font-size:11px;color:var(--accent2);margin-bottom:8px}
+
+/* === GAMIFICATION === */
+.economy-hero{background:linear-gradient(135deg,rgba(0,184,148,.2),rgba(0,184,148,.06));border-radius:var(--radius);padding:20px;margin-bottom:16px;text-align:center;border:1px solid rgba(0,184,148,.2);position:relative;overflow:hidden}
+.economy-hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(0,184,148,.08) 0%,transparent 60%);animation:pulse 4s infinite}
+.economy-hero .eco-amount{font-size:36px;font-weight:900;color:var(--green);position:relative}
+.economy-hero .eco-label{font-size:13px;color:var(--text2);margin-top:4px}
+.economy-waste{background:linear-gradient(135deg,rgba(214,48,49,.15),rgba(214,48,49,.05));border-radius:var(--radius);padding:14px;margin-bottom:12px;text-align:center;border:1px solid rgba(214,48,49,.15)}
+.economy-waste .eco-waste-amount{font-size:24px;font-weight:800;color:var(--red)}
+.economy-bar{background:var(--bg3);border-radius:20px;height:24px;overflow:hidden;margin:12px 0;position:relative}
+.economy-bar-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--green),#55efc4);transition:width .6s ease}
+.economy-bar-text{position:absolute;top:0;left:0;right:0;height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+
+.level-card{background:linear-gradient(135deg,rgba(108,92,231,.2),rgba(168,85,247,.1));border-radius:var(--radius);padding:18px;margin-bottom:16px;border:1px solid rgba(108,92,231,.2)}
+.level-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.level-icon{font-size:36px}
+.level-info{flex:1;margin-left:12px}
+.level-info h3{font-size:16px;font-weight:800}
+.level-info p{font-size:11px;color:var(--text2)}
+.level-xp{text-align:right}
+.level-xp .xp-num{font-size:20px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.level-xp .xp-label{font-size:10px;color:var(--text2)}
+.xp-bar{background:var(--bg3);border-radius:10px;height:10px;overflow:hidden;margin-top:8px}
+.xp-bar-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .6s ease}
+
+.challenge-card{background:linear-gradient(135deg,rgba(253,203,110,.15),rgba(253,203,110,.05));border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid rgba(253,203,110,.2)}
+.challenge-card h3{font-size:15px;font-weight:700;margin-bottom:6px}
+.challenge-card p{font-size:12px;color:var(--text2);margin-bottom:10px}
+.challenge-progress{background:var(--bg3);border-radius:10px;height:14px;overflow:hidden;position:relative}
+.challenge-progress-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--yellow),var(--orange));transition:width .6s ease}
+.challenge-progress-text{position:absolute;top:0;left:0;right:0;height:100%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+.challenge-reward{font-size:11px;color:var(--accent);margin-top:8px;font-weight:600}
+
+.ranking-card{background:linear-gradient(135deg,rgba(108,92,231,.12),rgba(168,85,247,.06));border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid rgba(108,92,231,.15)}
+.ranking-card h3{font-size:15px;font-weight:700;margin-bottom:12px}
+.ranking-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.ranking-row:last-child{border-bottom:none}
+.ranking-pos{font-size:18px;font-weight:900;width:28px;text-align:center}
+.ranking-name{flex:1;font-size:14px}
+.ranking-score{font-size:13px;font-weight:700;color:var(--accent)}
+
+.xp-toast{position:fixed;top:60px;right:20px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:700;z-index:300;transform:translateY(-20px);opacity:0;transition:all .3s ease;pointer-events:none}
+.xp-toast.show{transform:translateY(0);opacity:1}
+
+.chart-line-container{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.chart-line-container h3{font-size:14px;margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -243,10 +362,15 @@ canvas{width:100%;height:auto}
 <div id="page-home" class="page active">
   <div id="streak-section"></div>
   <div id="nlResult"></div>
+  <div id="daily-suggestion-section"></div>
   <div id="alerts-section"></div>
+  <div id="meal-planning-section"></div>
+  <div id="chef-mode-section"></div>
   <div id="ai-tip-section"></div>
   <div id="tip-section"></div>
   <div id="recipe-suggestion"></div>
+  <div id="weekly-planner-section"></div>
+  <div id="shopping-card-home"></div>
   <div id="waste-summary"></div>
   <div id="home-empty" class="empty-state" style="display:none">
     <div class="empty-emoji">🛒</div>
@@ -276,6 +400,27 @@ canvas{width:100%;height:auto}
   <div class="badge-grid" id="badgeGrid"></div>
 </div>
 
+<!-- SHOPPING LIST PAGE -->
+<div id="page-compras" class="page">
+  <div class="section-title">🛒 Lista de Compras</div>
+  <div class="shop-add-row">
+    <input class="form-input" id="shopManualInput" placeholder="Adicionar item manualmente...">
+    <button class="btn btn-primary" onclick="addManualShopItem()" style="padding:12px 16px">+</button>
+  </div>
+  <div class="shop-actions">
+    <button class="btn btn-secondary" onclick="generateSmartList()">✨ Gerar Lista</button>
+    <button class="btn btn-secondary" onclick="shareShoppingListWA()">📱 Compartilhar</button>
+    <button class="btn btn-secondary" onclick="clearBoughtItems()">🗑️ Limpar</button>
+  </div>
+  <div id="shop-suggestions-section"></div>
+  <div id="shop-list"></div>
+  <div id="shop-empty" class="empty-state" style="display:none">
+    <div class="empty-emoji">🛒</div>
+    <h3>Lista vazia!</h3>
+    <p>Toque em "Gerar Lista" ou adicione itens manualmente</p>
+  </div>
+</div>
+
 <!-- CONFIG PAGE -->
 <div id="page-config" class="page">
   <div class="section-title">⚙️ Configurações</div>
@@ -284,12 +429,34 @@ canvas{width:100%;height:auto}
     <button class="toggle" id="darkToggle" onclick="toggleTheme()"></button>
   </div>
   <div class="config-item">
-    <div class="config-left"><span class="config-icon">🔔</span><div><h4>Notificações</h4><p>3 dias, 1 dia, no dia</p></div></div>
+    <div class="config-left"><span class="config-icon">🔔</span><div><h4>Notificações</h4><p>Ativar sistema de alertas</p></div></div>
     <button class="toggle" id="notifToggle" onclick="toggleNotif()"></button>
   </div>
-  <div class="config-item" onclick="showMorningSummaryConfig()">
-    <div class="config-left"><span class="config-icon">☀️</span><div><h4>Resumo Matinal</h4><p>Notificação diária às 8h</p></div></div>
-    <button class="toggle" id="morningToggle"></button>
+  <div id="notifSubSettings" style="display:none;padding-left:12px">
+    <div class="config-item">
+      <div class="config-left"><span class="config-icon">🟡</span><div><h4>3 dias antes</h4><p>Aviso antecipado</p></div></div>
+      <button class="toggle" id="notif3daysToggle" onclick="toggleNotifSub('notif3days')"></button>
+    </div>
+    <div class="config-item">
+      <div class="config-left"><span class="config-icon">🟠</span><div><h4>1 dia antes</h4><p>Alerta urgente</p></div></div>
+      <button class="toggle" id="notif1dayToggle" onclick="toggleNotifSub('notif1day')"></button>
+    </div>
+    <div class="config-item">
+      <div class="config-left"><span class="config-icon">🔴</span><div><h4>No dia</h4><p>Vence hoje!</p></div></div>
+      <button class="toggle" id="notifTodayToggle" onclick="toggleNotifSub('notifToday')"></button>
+    </div>
+    <div class="config-item" onclick="toggleMorningSummary(event)">
+      <div class="config-left"><span class="config-icon">☀️</span><div><h4>Resumo Matinal</h4><p id="morningDesc">Notificação diária às 8h</p></div></div>
+      <button class="toggle" id="morningToggle"></button>
+    </div>
+    <div class="config-item" id="morningHourItem" style="display:none">
+      <div class="config-left"><span class="config-icon">🕐</span><div><h4>Horário do Resumo</h4><p>Escolha o horário</p></div></div>
+      <input type="time" id="morningHourInput" value="08:00" style="background:var(--bg2);color:var(--text);border:1px solid var(--bg3);border-radius:8px;padding:6px 10px;font-size:14px" onchange="setMorningHour(this.value)">
+    </div>
+    <div class="config-item">
+      <div class="config-left"><span class="config-icon">🍳</span><div><h4>Sugestão de Receita</h4><p>Dica de uso na notificação</p></div></div>
+      <button class="toggle" id="recipeSugToggle" onclick="toggleNotifSub('recipeSuggestion')"></button>
+    </div>
   </div>
   <div class="section-title">🏠 Minhas Casas</div>
   <div class="card">
@@ -361,6 +528,7 @@ canvas{width:100%;height:auto}
 <nav class="bottom-nav">
   <button class="nav-item active" data-page="home"><span class="icon">🏠</span>Início</button>
   <button class="nav-item" data-page="items"><span class="icon">📦</span>Itens</button>
+  <button class="nav-item" data-page="compras"><span class="icon">🛒</span>Compras</button>
   <button class="nav-item" data-page="stats"><span class="icon">📊</span>Stats</button>
   <button class="nav-item" data-page="config"><span class="icon">⚙️</span>Config</button>
 </nav>
@@ -733,7 +901,7 @@ function loadState(){
   try{const s=JSON.parse(localStorage.getItem('validade_state'));if(!s)return defaultState();const ds=defaultState();return{...ds,...s,stats:{...ds.stats,...(s.stats||{})},settings:{...ds.settings,...(s.settings||{})}}}catch(e){return defaultState()}
 }
 function defaultState(){
-  return {items:[],stats:{streak:0,lastNoWasteDate:null,recipesUsed:0,frozenManaged:0,totalTracked:0,moneySaved:0,moneyWasted:0,wasteLog:[]},settings:{darkMode:true,notifications:false,morningSummary:false},shareCode:null,houses:[{id:'casa',name:'🏠 Minha Casa'}]};
+  return {items:[],stats:{streak:0,lastNoWasteDate:null,recipesUsed:0,frozenManaged:0,totalTracked:0,moneySaved:0,moneyWasted:0,wasteLog:[]},settings:{darkMode:true,notifications:false,morningSummary:false,notif3days:true,notif1day:true,notifToday:true,morningHour:8,recipeSuggestion:false},shareCode:null,houses:[{id:'casa',name:'🏠 Minha Casa'}]};
 }
 function save(){try{localStorage.setItem('validade_state',JSON.stringify(state))}catch(e){console.error('Storage error:',e);toast('⚠️ Armazenamento cheio! Exclua fotos ou itens antigos.')}if(isLoggedIn())syncToServer()}
 function uuid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,9)}
@@ -1617,6 +1785,16 @@ function renderConfig(){
   document.getElementById('darkToggle').classList.toggle('on',state.settings.darkMode);
   document.getElementById('notifToggle').classList.toggle('on',state.settings.notifications);
   document.getElementById('morningToggle').classList.toggle('on',state.settings.morningSummary);
+  // Sub-settings visibility
+  const sub=document.getElementById('notifSubSettings');
+  if(sub)sub.style.display=state.settings.notifications?'block':'none';
+  const n3=document.getElementById('notif3daysToggle');if(n3)n3.classList.toggle('on',state.settings.notif3days!==false);
+  const n1=document.getElementById('notif1dayToggle');if(n1)n1.classList.toggle('on',state.settings.notif1day!==false);
+  const nt=document.getElementById('notifTodayToggle');if(nt)nt.classList.toggle('on',state.settings.notifToday!==false);
+  const rs=document.getElementById('recipeSugToggle');if(rs)rs.classList.toggle('on',!!state.settings.recipeSuggestion);
+  const mhi=document.getElementById('morningHourItem');if(mhi)mhi.style.display=state.settings.morningSummary?'flex':'none';
+  const mhInput=document.getElementById('morningHourInput');if(mhInput)mhInput.value=String(state.settings.morningHour||8).padStart(2,'0')+':00';
+  const md=document.getElementById('morningDesc');if(md)md.textContent='Notificação diária às '+(state.settings.morningHour||8)+'h';
   if(state.shareCode)document.getElementById('shareCode').textContent=state.shareCode;
   renderHousesList();
   // Account info
@@ -1639,14 +1817,103 @@ function toggleNotif(){
   if(!state.settings.notifications&&'Notification' in window){
     Notification.requestPermission().then(p=>{
       state.settings.notifications=p==='granted';save();renderConfig();
-      if(p==='granted')toast('🔔 Notificações ativadas!');
+      if(p==='granted'){toast('🔔 Notificações ativadas!');startNotificationChecker();}
     });
-  }else{state.settings.notifications=!state.settings.notifications;save();renderConfig()}
+  }else{state.settings.notifications=!state.settings.notifications;save();renderConfig();
+    if(state.settings.notifications)startNotificationChecker();
+  }
 }
 
-function showMorningSummaryConfig(){
+function toggleNotifSub(key){
+  state.settings[key]=!state.settings[key];save();renderConfig();
+}
+
+function toggleMorningSummary(e){
+  if(e&&e.target.tagName==='INPUT')return;
   state.settings.morningSummary=!state.settings.morningSummary;save();renderConfig();
   toast(state.settings.morningSummary?'☀️ Resumo matinal ativado':'Resumo matinal desativado');
+}
+
+function setMorningHour(val){
+  state.settings.morningHour=parseInt(val.split(':')[0])||8;save();renderConfig();
+  toast('🕐 Resumo às '+state.settings.morningHour+'h');
+}
+
+// Recipe suggestions map
+const RECIPE_HINTS={tomate:'Que tal fazer molho?',banana:'Que tal um bolo de banana?',leite:'Que tal fazer um pudim?',ovo:'Que tal uma omelete?',ovos:'Que tal uma omelete?',queijo:'Que tal uma torrada com queijo?',frango:'Que tal fazer um strogonoff?',carne:'Que tal um ensopado?',iogurte:'Que tal um smoothie?',maçã:'Que tal uma torta de maçã?',batata:'Que tal uma sopa?',cenoura:'Que tal um bolo de cenoura?',abacate:'Que tal um guacamole?',limão:'Que tal uma limonada?',pão:'Que tal fazer torradas?',arroz:'Que tal arroz frito?',feijão:'Que tal uma feijoada?'};
+
+function getRecipeHint(name){
+  if(!state.settings.recipeSuggestion)return '';
+  const n=name.toLowerCase();
+  for(const[k,v]of Object.entries(RECIPE_HINTS)){if(n.includes(k))return ' '+v}
+  return ' Que tal usar hoje?';
+}
+
+// Smart notification checker
+let notifInterval=null;
+function startNotificationChecker(){
+  if(notifInterval)clearInterval(notifInterval);
+  if(!state.settings.notifications)return;
+  checkAndNotify();
+  notifInterval=setInterval(checkAndNotify,3600000); // every hour
+}
+
+function checkAndNotify(){
+  if(!state.settings.notifications||!('Notification' in window)||Notification.permission!=='granted')return;
+  const now=new Date();
+  const today=now.toISOString().split('T')[0];
+  const lastNotif=localStorage.getItem('validade_lastNotif')||'';
+  const lastMorning=localStorage.getItem('validade_lastMorning')||'';
+  const activeItems=state.items.filter(i=>i.status==='active'&&i.expiryDate);
+
+  // Morning summary
+  const mHour=state.settings.morningHour||8;
+  if(state.settings.morningSummary&&now.getHours()>=mHour&&lastMorning!==today){
+    const weekFromNow=new Date(now);weekFromNow.setDate(weekFromNow.getDate()+7);
+    const weekStr=weekFromNow.toISOString().split('T')[0];
+    const thisWeek=activeItems.filter(i=>i.expiryDate>=today&&i.expiryDate<=weekStr);
+    if(thisWeek.length>0){
+      showLocalNotif('☀️ Bom dia!','Você tem '+thisWeek.length+' ite'+(thisWeek.length===1?'m':'ns')+' vencendo esta semana','morning');
+    }
+    localStorage.setItem('validade_lastMorning',today);
+  }
+
+  // Don't repeat daily alerts
+  if(lastNotif===today)return;
+
+  const in3=new Date(now);in3.setDate(in3.getDate()+3);
+  const in3str=in3.toISOString().split('T')[0];
+  const in1=new Date(now);in1.setDate(in1.getDate()+1);
+  const in1str=in1.toISOString().split('T')[0];
+
+  // Today
+  if(state.settings.notifToday!==false){
+    const todayItems=activeItems.filter(i=>i.expiryDate===today);
+    todayItems.forEach(i=>showLocalNotif('🔴 Vence HOJE!',i.name+' vence HOJE! Não desperdice!'+getRecipeHint(i.name),'today-'+i.id));
+  }
+  // 1 day
+  if(state.settings.notif1day!==false){
+    const tmrwItems=activeItems.filter(i=>i.expiryDate===in1str);
+    tmrwItems.forEach(i=>showLocalNotif('🟠 Vence amanhã!',i.name+' vence amanhã! Use antes que estrague'+getRecipeHint(i.name),'1day-'+i.id));
+  }
+  // 3 days
+  if(state.settings.notif3days!==false){
+    const soon=activeItems.filter(i=>i.expiryDate===in3str);
+    soon.forEach(i=>showLocalNotif('🟡 Vence em 3 dias','Seu '+i.name+' vence em 3 dias.'+getRecipeHint(i.name),'3day-'+i.id));
+  }
+  localStorage.setItem('validade_lastNotif',today);
+}
+
+function showLocalNotif(title,body,tag){
+  try{
+    if(navigator.serviceWorker&&navigator.serviceWorker.controller){
+      navigator.serviceWorker.ready.then(reg=>{
+        reg.showNotification(title,{body,icon:'🥦',badge:'⚠️',tag:'validade-'+tag,data:{url:'/'},vibrate:[200,100,200]});
+      });
+    }else{
+      new Notification(title,{body,tag:'validade-'+tag});
+    }
+  }catch(e){console.warn('Notification error:',e)}
 }
 
 async function generateShareCode(){
@@ -1910,16 +2177,7 @@ if('serviceWorker' in navigator){
 }
 
 // ===== NOTIFICATIONS CHECK =====
-function checkNotifications(){
-  if(!state.settings.notifications)return;
-  const items=state.items.filter(i=>i.status==='active');
-  const expToday=items.filter(i=>daysUntil(i.expiryDate)===0);
-  const exp1=items.filter(i=>daysUntil(i.expiryDate)===1);
-  const exp3=items.filter(i=>daysUntil(i.expiryDate)===3);
-  if(expToday.length&&Notification.permission==='granted')new Notification('⚠️ Vence HOJE!',{body:expToday.map(i=>i.name).join(', ')});
-  if(exp1.length&&Notification.permission==='granted')new Notification('⏰ Vence amanhã',{body:exp1.map(i=>i.name).join(', ')});
-  if(exp3.length&&Notification.permission==='granted')new Notification('📅 Vence em 3 dias',{body:exp3.map(i=>i.name).join(', ')});
-}
+function checkNotifications(){checkAndNotify()}
 
 // ===== INIT =====
 function checkUrlImport(){
