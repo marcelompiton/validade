@@ -131,6 +131,8 @@ app.get('/api/me', authMiddleware, (req, res) => {
 app.post('/api/items', authMiddleware, (req, res) => {
   const { data } = req.body;
   if (!data) return res.status(400).json({ error: 'Data required' });
+  const dataStr = JSON.stringify(data);
+  if (dataStr.length > 2 * 1024 * 1024) return res.status(413).json({ error: 'Data too large (max 2MB)' });
   
   const existing = db.prepare('SELECT id FROM items WHERE user_id = ?').get(req.user.id);
   if (existing) {
@@ -153,7 +155,10 @@ app.post('/api/gemini', authMiddleware, async (req, res) => {
   if (rateLimit(req.ip, 20, 60000)) return res.status(429).json({ error: 'Rate limit exceeded' });
   try {
     const { contents, generationConfig } = req.body;
-    if (!contents) return res.status(400).json({ error: 'contents required' });
+    if (!contents || !Array.isArray(contents)) return res.status(400).json({ error: 'contents required (array)' });
+    // Limit request size to prevent abuse
+    const bodySize = JSON.stringify(req.body).length;
+    if (bodySize > 1024 * 1024) return res.status(413).json({ error: 'Request too large' });
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
     const resp = await fetch(url, {
       method: 'POST',
