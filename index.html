@@ -12,7 +12,7 @@
 <style>
 :root{--bg:#0f0f1a;--bg2:#1a1a2e;--bg3:#252540;--text:#e8e8f0;--text2:#9999b0;--accent:#6c5ce7;--accent2:#a855f7;--green:#00b894;--yellow:#fdcb6e;--orange:#e17055;--red:#d63031;--card:#1e1e35;--radius:16px;--shadow:0 4px 20px rgba(0,0,0,.3);--transition:.3s cubic-bezier(.4,0,.2,1)}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;padding-bottom:130px;transition:background var(--transition),color var(--transition)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;padding-bottom:0;transition:background var(--transition),color var(--transition)}
 body.light{--bg:#f5f5ff;--bg2:#eeeef8;--bg3:#e0e0ee;--text:#1a1a2e;--text2:#666680;--card:#fff;--shadow:0 4px 20px rgba(0,0,0,.08)}
 
 ::-webkit-scrollbar{width:4px}
@@ -25,7 +25,7 @@ body.light{--bg:#f5f5ff;--bg2:#eeeef8;--bg3:#e0e0ee;--text:#1a1a2e;--text2:#6666
 .header-btn{background:var(--bg2);border:none;color:var(--text);width:40px;height:40px;border-radius:12px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
 .header-btn:active{transform:scale(.9)}
 
-.page{display:none;padding:0 16px 140px;animation:fadeIn .3s ease}
+.page{display:none;padding:0 16px 160px;animation:fadeIn .3s ease}
 .page.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
@@ -34,8 +34,8 @@ body.light{--bg:#f5f5ff;--bg2:#eeeef8;--bg3:#e0e0ee;--text:#1a1a2e;--text2:#6666
 @keyframes sparkle{0%,100%{opacity:1}50%{opacity:.5}}
 
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);backdrop-filter:blur(20px);display:flex;justify-content:space-around;padding:8px 0 max(8px,env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.05);z-index:100}
-.nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 16px;border:none;background:none;color:var(--text2);font-size:10px;cursor:pointer;transition:var(--transition);border-radius:12px}
-.nav-item .icon{font-size:22px;transition:var(--transition)}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px;border:none;background:none;color:var(--text2);font-size:9px;cursor:pointer;transition:var(--transition);border-radius:12px;min-width:0;flex:1}
+.nav-item .icon{font-size:20px;transition:var(--transition)}
 .nav-item.active{color:var(--accent)}
 .nav-item.active .icon{transform:scale(1.15)}
 .nav-item:active{transform:scale(.9)}
@@ -55,7 +55,7 @@ body.light{--bg:#f5f5ff;--bg2:#eeeef8;--bg3:#e0e0ee;--text:#1a1a2e;--text2:#6666
 .alert-count{background:var(--red);color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
 
 .streak-card{background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:16px;position:relative;overflow:hidden}
-.streak-card::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(255,255,255,.1) 0%,transparent 60%);animation:pulse 3s infinite}
+.streak-card::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(255,255,255,.1) 0%,transparent 60%)}
 .streak-num{font-size:48px;font-weight:900}
 .streak-label{font-size:13px;opacity:.9;margin-top:4px}
 .streak-fire{font-size:28px}
@@ -178,7 +178,7 @@ canvas{width:100%;height:auto}
 .ai-loading .ai-spinner{display:inline-block;animation:sparkle 1s infinite;margin-right:6px}
 
 /* AI NL Input */
-.ai-chat-bar{position:fixed;bottom:76px;left:0;right:0;background:var(--bg);padding:10px 16px 12px;z-index:99}
+.ai-chat-bar{position:fixed;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:0;right:0;background:var(--bg);padding:10px 16px 12px;z-index:99}
 .ai-box-input{position:relative}
 .ai-box-input textarea{width:100%;padding:12px 90px 12px 14px;background:var(--bg3);border:2px solid transparent;border-radius:24px;color:var(--text);font-size:15px;outline:none;resize:none;min-height:46px;max-height:120px;font-family:inherit;transition:border-color .3s;line-height:1.4;overflow:hidden}
 .ai-box-input textarea:focus{border-color:var(--accent)}
@@ -220,8 +220,8 @@ canvas{width:100%;height:auto}
 
 /* Weekly Planner */
 .planner-section{margin-bottom:16px}
-.planner-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:8px}
-.planner-day{background:var(--card);border-radius:10px;padding:8px 4px;text-align:center;min-height:80px;cursor:pointer;transition:var(--transition);border:2px solid transparent;position:relative}
+.planner-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:8px;overflow-x:auto}
+.planner-day{background:var(--card);border-radius:10px;padding:6px 2px;text-align:center;min-height:72px;min-width:38px;cursor:pointer;transition:var(--transition);border:2px solid transparent;position:relative}
 .planner-day:active{transform:scale(.96)}
 .planner-day.today{border-color:var(--accent)}
 .planner-day .day-label{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase}
@@ -303,7 +303,7 @@ canvas{width:100%;height:auto}
 
 /* === GAMIFICATION === */
 .economy-hero{background:linear-gradient(135deg,rgba(0,184,148,.2),rgba(0,184,148,.06));border-radius:var(--radius);padding:20px;margin-bottom:16px;text-align:center;border:1px solid rgba(0,184,148,.2);position:relative;overflow:hidden}
-.economy-hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(0,184,148,.08) 0%,transparent 60%);animation:pulse 4s infinite}
+.economy-hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(0,184,148,.08) 0%,transparent 60%)}
 .economy-hero .eco-amount{font-size:36px;font-weight:900;color:var(--green);position:relative}
 .economy-hero .eco-label{font-size:13px;color:var(--text2);margin-top:4px}
 .economy-waste{background:linear-gradient(135deg,rgba(214,48,49,.15),rgba(214,48,49,.05));border-radius:var(--radius);padding:14px;margin-bottom:12px;text-align:center;border:1px solid rgba(214,48,49,.15)}
@@ -734,12 +734,9 @@ async function callGemini(parts,maxTokens=1024){
       const resp=await fetch(API_URL+'/api/gemini',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(body)});
       if(resp.ok){const data=await resp.json();return data.candidates?.[0]?.content?.parts?.[0]?.text||null}
     }
-    // Fallback: direct call (GitHub Pages without backend)
-    const GEMINI_URL='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBnqalI_0KRLZK7ccZ8_vaQSpvhLU_tP5k';
-    const resp=await fetch(GEMINI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(!resp.ok)throw new Error(`API ${resp.status}`);
-    const data=await resp.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text||null;
+    // Fallback: direct call disabled for security (API key must stay server-side)
+    console.warn('Gemini proxy unavailable — cannot call API without backend');
+    return null;
   }catch(e){console.error('Gemini error:',e);return null}
 }
 
@@ -954,10 +951,10 @@ async function syncFromServer(){
 let state = loadState();
 
 function loadState(){
-  try{const s=JSON.parse(localStorage.getItem('validade_state'));if(!s)return defaultState();const ds=defaultState();return{...ds,...s,stats:{...ds.stats,...(s.stats||{})},settings:{...ds.settings,...(s.settings||{})}}}catch(e){return defaultState()}
+  try{const s=JSON.parse(localStorage.getItem('validade_state'));if(!s)return defaultState();const ds=defaultState();const merged={...ds,...s,stats:{...ds.stats,...(s.stats||{})},settings:{...ds.settings,...(s.settings||{})}};if(!Array.isArray(merged.stats.wasteLog))merged.stats.wasteLog=[];if(!Array.isArray(merged.stats.recipesCooked))merged.stats.recipesCooked=[];if(!Array.isArray(merged.houses)||!merged.houses.length)merged.houses=ds.houses;return merged}catch(e){return defaultState()}
 }
 function defaultState(){
-  return {items:[],stats:{streak:0,lastNoWasteDate:null,recipesUsed:0,frozenManaged:0,totalTracked:0,moneySaved:0,moneyWasted:0,wasteLog:[]},settings:{darkMode:true,notifications:false,morningSummary:false,notif3days:true,notif1day:true,notifToday:true,morningHour:8,recipeSuggestion:false},shareCode:null,houses:[{id:'casa',name:'🏠 Minha Casa'}]};
+  return {items:[],stats:{streak:0,lastNoWasteDate:null,recipesUsed:0,frozenManaged:0,totalTracked:0,moneySaved:0,moneyWasted:0,wasteLog:[],recipesCooked:[]},settings:{darkMode:true,notifications:false,morningSummary:false,notif3days:true,notif1day:true,notifToday:true,morningHour:8,recipeSuggestion:false},shareCode:null,houses:[{id:'casa',name:'🏠 Minha Casa'}]};
 }
 function save(){try{localStorage.setItem('validade_state',JSON.stringify(state))}catch(e){console.error('Storage error:',e);toast('⚠️ Armazenamento cheio! Exclua fotos ou itens antigos.')}if(isLoggedIn())syncToServer()}
 function uuid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,9)}
@@ -1122,6 +1119,7 @@ function addAllPhotoItems(){
       addedDate:today(),photo:photoSrc,price:parseFloat(p.estimatedPrice)||0,
       notes:'',status:'active',frozenDate:null
     });
+    if(parseFloat(p.estimatedPrice)>0)recordPrice(p.name,parseFloat(p.estimatedPrice)||0,'',validCat);
     state.stats.totalTracked++;
   });
   save();renderHome();renderItems();
@@ -1257,6 +1255,7 @@ function addFromNL(index,btn){
     addedDate:today(),photo:null,price:item.price||0,
     status:loc==='freezer'?'frozen':'active',frozenDate:loc==='freezer'?today():null,notes:'Adicionado via IA'
   });
+  if(item.price>0)recordPrice(item.name||'Item',item.price||0,'',cat);
   state.stats.totalTracked++;
   save();renderHome();renderItems();
   toast('✅ '+item.name+' adicionado!');
@@ -1280,6 +1279,7 @@ function addAllFromNL(){
       addedDate:today(),photo:null,price:item.price||0,
       status:loc==='freezer'?'frozen':'active',frozenDate:loc==='freezer'?today():null,notes:'Adicionado via IA'
     });
+    if(item.price>0)recordPrice(item.name||'Item',item.price||0,'',cat);
     state.stats.totalTracked++;count++;
   });
   save();renderHome();renderItems();
@@ -1684,6 +1684,13 @@ function showDetail(id){
   let html=`<div style="text-align:center;margin-bottom:16px"><span style="font-size:48px">${getCatEmoji(item.category)}</span><h2 style="margin-top:8px">${esc(item.name)}</h2><span class="item-badge ${color}" style="display:inline-block;margin-top:8px;font-size:14px;padding:6px 16px">${statusText}</span></div>`;
   html+=`<div class="card"><p>📁 ${getCatName(item.category)}</p><p>📍 ${locName(item.location)}</p><p>📦 ${item.quantity} ${esc(item.unit)}</p><p>📅 Validade: ${item.expiryDate}</p>`;
   if(item.price)html+=`<p>💰 R$ ${item.price.toFixed(2)}</p>`;
+  if(item.store)html+=`<p>🏪 ${esc(item.store)}</p>`;
+  const ph=getItemPriceHistory(item.name);
+  if(ph.length>=2){
+    const avg=getAvgPrice(ph);
+    const t=getPriceTrend(ph);
+    html+=`<p>📈 Média: R$ ${avg.toFixed(2)} (${ph.length} registros) ${t.trend==='up'?'<span style="color:var(--red)">▲'+t.pct+'%</span>':t.trend==='down'?'<span style="color:var(--green)">▼'+t.pct+'%</span>':'estável'}</p>`;
+  }
   if(item.notes)html+=`<p>📝 ${esc(item.notes)}</p>`;
   if(item.frozenDate)html+=`<p>❄️ Congelado em: ${item.frozenDate}</p>`;
   html+=`</div>`;
@@ -2076,7 +2083,16 @@ function showNotifSummary(){
 
 // ===== EXPORT/IMPORT =====
 function exportBackup(){
-  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const fullBackup={
+    state,
+    shoppingList:getShoppingList(),
+    consumptionHistory:getConsumptionHistory(),
+    gamification:getGamification(),
+    weeklyPlan:getWeeklyPlan(),
+    priceHistory:getPriceHistory(),
+    version:2
+  };
+  const blob=new Blob([JSON.stringify(fullBackup,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;a.download='validade_backup.json';a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -2087,7 +2103,18 @@ function importBackup(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=function(ev){
-    try{const imported=JSON.parse(ev.target.result);const ds=defaultState();state={...ds,...imported,stats:{...ds.stats,...(imported.stats||{})},settings:{...ds.settings,...(imported.settings||{})}};save();document.body.classList.toggle('light',!state.settings.darkMode);document.getElementById('themeBtn').textContent=state.settings.darkMode?'🌙':'☀️';renderHome();toast('📥 Backup restaurado!')}
+    try{const imported=JSON.parse(ev.target.result);
+      // Support v2 full backup format
+      const stateData=imported.version===2?(imported.state||imported):imported;
+      const ds=defaultState();state={...ds,...stateData,stats:{...ds.stats,...(stateData.stats||{})},settings:{...ds.settings,...(stateData.settings||{})}};
+      if(imported.version===2){
+        if(imported.shoppingList)saveShoppingList(imported.shoppingList);
+        if(imported.consumptionHistory)saveConsumptionHistory(imported.consumptionHistory);
+        if(imported.gamification)saveGamification(imported.gamification);
+        if(imported.weeklyPlan)saveWeeklyPlan(imported.weeklyPlan);
+        if(imported.priceHistory)savePriceHistory(imported.priceHistory);
+      }
+      save();document.body.classList.toggle('light',!state.settings.darkMode);document.getElementById('themeBtn').textContent=state.settings.darkMode?'🌙':'☀️';renderHome();toast('📥 Backup restaurado!')}
     catch(err){toast('❌ Arquivo inválido!')}
   };
   reader.readAsText(file);
@@ -2829,6 +2856,9 @@ function useIngredients(recipeIdx){
     if(ings.some(ing=>item.name.toLowerCase().includes(ing)||ing.includes(item.name.toLowerCase()))){
       item.status='consumed';
       state.stats.moneySaved+=item.price||0;
+      trackConsumption(item);
+      addXP(20,"consumido via receita!");
+      trackChallengeProgress("consume");
       consumed++;
     }
   });

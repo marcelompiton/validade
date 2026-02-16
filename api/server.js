@@ -8,8 +8,12 @@ const path = require('path');
 const app = express();
 const PORT = 3457;
 
-app.use(cors());
-app.use(express.json({ limit: '5mb' }));
+// CORS: restrict to same-origin in production, allow localhost for dev
+const ALLOWED_ORIGINS = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',')
+  : undefined; // undefined = allow all (dev mode)
+app.use(cors(ALLOWED_ORIGINS ? { origin: ALLOWED_ORIGINS } : undefined));
+app.use(express.json({ limit: '2mb' }));
 
 // Basic rate limiting for auth endpoints
 const authAttempts = new Map();
@@ -70,12 +74,23 @@ function authMiddleware(req, res, next) {
   next();
 }
 
+// Input validation helpers
+function validateString(val, maxLen = 255) {
+  return typeof val === 'string' && val.trim().length > 0 && val.length <= maxLen;
+}
+function validateEmail(val) {
+  return typeof val === 'string' && val.length <= 255 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+}
+
 // Register
 app.post('/api/register', (req, res) => {
   if (rateLimit(req.ip, 5)) return res.status(429).json({ error: 'Too many attempts. Try again later.' });
   const { name, email, phone, password } = req.body;
   if (!name || !email || !phone || !password) return res.status(400).json({ error: 'All fields required' });
-  if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  if (!validateString(name, 100)) return res.status(400).json({ error: 'Invalid name' });
+  if (!validateEmail(email)) return res.status(400).json({ error: 'Invalid email' });
+  if (!validateString(phone, 20)) return res.status(400).json({ error: 'Invalid phone' });
+  if (password.length < 6 || password.length > 128) return res.status(400).json({ error: 'Password must be 6-128 characters' });
   
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase());
   if (existing) return res.status(409).json({ error: 'Email already registered' });
