@@ -413,7 +413,7 @@ canvas{width:100%;height:auto}
 
 <!-- ITEMS PAGE -->
 <div id="page-items" class="page">
-  <div class="search-bar"><input type="text" id="searchInput" placeholder="Buscar itens..." oninput="renderItems()"></div>
+  <div class="search-bar"><input type="text" id="searchInput" placeholder="Buscar itens..." oninput="debouncedRenderItems()"></div>
   <div class="filter-row" id="filterRow"></div>
   <div id="items-list"></div>
   <div id="items-empty" class="empty-state" style="display:none">
@@ -755,6 +755,9 @@ function extractJSON(text){
 
 // HTML escape to prevent XSS
 function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+// Debounce utility
+function debounce(fn, ms){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),ms)}}
 
 // ===== DATA =====
 const CATEGORIES = [
