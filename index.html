@@ -393,6 +393,8 @@ canvas{width:100%;height:auto}
   <div id="nlResult"></div>
   <div id="daily-suggestion-section"></div>
   <div id="alerts-section"></div>
+  <div id="price-alerts-section"></div>
+  <div id="opportunity-section"></div>
   <div id="ranking-section"></div>
   <div id="meal-planning-section"></div>
   <div id="chef-mode-section"></div>
@@ -429,6 +431,8 @@ canvas{width:100%;height:auto}
   <div class="chart-line-container"><h3>📈 Economia Mensal (últimos 6 meses)</h3><canvas id="lineChart" width="300" height="200"></canvas></div>
   <div class="chart-container"><h3>📊 Consumidos vs Desperdiçados</h3><canvas id="pieChart" width="300" height="200"></canvas></div>
   <div class="chart-container"><h3>💰 Desperdício Mensal (R$)</h3><canvas id="barChart" width="300" height="200"></canvas></div>
+  <div id="market-comparison-section"></div>
+  <div id="monthly-report-section"></div>
   <div class="section-title">🏅 Conquistas</div>
   <div class="badge-grid" id="badgeGrid"></div>
 </div>
@@ -2444,6 +2448,332 @@ function checkUrlImport(){
     }
   }catch(e){console.error('Import error:',e)}
 }
+// ===== MEAL PLANNING =====
+
+// Get items expiring within N days
+function getExpiringItems(days){
+  return state.items.filter(i=>i.status==='active'&&daysUntil(i.expiryDate)>=0&&daysUntil(i.expiryDate)<=days);
+}
+
+// Render "What to make with what you have" card
+function renderMealPlanning(){
+  const section=document.getElementById('meal-planning-section');
+  const expiring=getExpiringItems(5);
+  if(expiring.length===0){section.innerHTML='';return}
+  section.innerHTML=`
+    <div class="meal-card">
+      <h3>🍽️ O que fazer com o que você tem</h3>
+      <p>${expiring.length} item(ns) vencem nos próximos 5 dias: <strong>${expiring.map(i=>i.name).join(', ')}</strong></p>
+      <button class="meal-btn" onclick="generateMealRecipes()">✨ Sugerir Receitas com IA</button>
+    </div>
+    <div id="meal-recipes-result"></div>`;
+}
+
+async function generateMealRecipes(){
+  const expiring=getExpiringItems(5);
+  if(!expiring.length){toast('Nenhum item vencendo em breve');return}
+  const resultDiv=document.getElementById('meal-recipes-result');
+  resultDiv.innerHTML='<div class="ai-loading"><span class="ai-spinner">✨</span> Gerando receitas personalizadas...</div>';
+
+  const allItems=state.items.filter(i=>i.status==='active'||i.status==='frozen').map(i=>i.name);
+  const expiringNames=expiring.map(i=>i.name);
+
+  const prompt=`Tenho estes ingredientes na despensa: ${allItems.join(', ')}. 
+Destes, vencem nos próximos 5 dias: ${expiringNames.join(', ')}.
+Sugira 2-3 receitas simples brasileiras priorizando os itens que vencem. 
+Responda APENAS em JSON válido: [{"name":"nome da receita","prepTime":"Xmin","ingredients":[{"name":"ing","userHas":true/false}],"steps":"passo a passo curto numerado"}]`;
+
+  const result=await callGemini([{text:prompt}],1500);
+  const parsed=extractJSON(result);
+  if(!Array.isArray(parsed)||!parsed.length){
+    resultDiv.innerHTML='<div class="ai-photo-result"><p>❌ Não foi possível gerar receitas. Tente novamente.</p></div>';
+    return;
+  }
+
+  // Store for planner use
+  window._mealRecipes=parsed;
+
+  resultDiv.innerHTML=parsed.map((r,idx)=>{
+    const ings=(r.ingredients||[]).map(ing=>{
+      const has=ing.userHas!==false;
+      return `<span class="${has?'has':'need'}">${has?'✅':'🛒'} ${esc(typeof ing==='string'?ing:ing.name)}</span>`;
+    }).join(' · ');
+    return `<div class="meal-recipe">
+      <h4>🍳 ${esc(r.name)} <span style="font-size:11px;color:var(--text2)">⏱️ ${esc(r.prepTime||'?')}</span></h4>
+      <div class="ing-list">${ings}</div>
+      <div class="steps">${esc(r.steps||'')}</div>
+      <div class="recipe-actions">
+        <button class="use-btn" onclick="useIngredients(${idx})">✅ Usei esses ingredientes</button>
+        <button class="plan-btn" onclick="addRecipeToPlanner(${idx})">📅 Planejar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function useIngredients(recipeIdx){
+  const recipes=window._mealRecipes;
+  if(!recipes||!recipes[recipeIdx])return;
+  const recipe=recipes[recipeIdx];
+  const ings=(recipe.ingredients||[]).map(i=>typeof i==='string'?i:i.name).map(n=>n.toLowerCase());
+  
+  let consumed=0;
+  const expiring=getExpiringItems(5);
+  expiring.forEach(item=>{
+    if(ings.some(ing=>item.name.toLowerCase().includes(ing)||ing.includes(item.name.toLowerCase()))){
+      item.status='consumed';
+      state.stats.moneySaved+=item.price||0;
+      consumed++;
+    }
+  });
+
+  // Track recipe usage for chef mode
+  if(!state.stats.recipesCooked)state.stats.recipesCooked=[];
+  state.stats.recipesCooked.push({date:today(),name:recipe.name});
+  state.stats.recipesUsed=(state.stats.recipesUsed||0)+1;
+
+  save();renderHome();renderItems();
+  toast(`👨‍🍳 ${consumed} ingrediente(s) marcado(s) como consumido(s)!`);
+}
+
+// ===== WEEKLY PLANNER =====
+
+function getWeeklyPlan(){
+  try{return JSON.parse(localStorage.getItem('validade_weekly_plan'))||{}}catch(e){return{}}
+}
+function saveWeeklyPlan(plan){localStorage.setItem('validade_weekly_plan',JSON.stringify(plan))}
+
+function renderWeeklyPlanner(){
+  const section=document.getElementById('weekly-planner-section');
+  const plan=getWeeklyPlan();
+  const now=new Date();
+  const dayOfWeek=now.getDay();// 0=sun
+  const monday=new Date(now);monday.setDate(now.getDate()-((dayOfWeek+6)%7));
+
+  const dayNames=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+  let gridHTML='';
+  const allItemNames=state.items.filter(i=>i.status==='active'||i.status==='frozen').map(i=>i.name.toLowerCase());
+
+  for(let i=0;i<7;i++){
+    const d=new Date(monday);d.setDate(monday.getDate()+i);
+    const key=d.toISOString().split('T')[0];
+    const isToday=key===today();
+    const recipe=plan[key];
+    gridHTML+=`<div class="planner-day ${isToday?'today':''} ${recipe?'has-recipe':''}" onclick="openPlannerDay('${key}','${dayNames[i]}')">
+      <div class="day-label">${dayNames[i]}</div>
+      <div class="day-num">${d.getDate()}</div>
+      ${recipe?`<div class="day-emoji">🍳</div><div class="day-recipe">${esc(recipe.name)}</div>`:'<div class="day-emoji" style="opacity:.2">+</div>'}
+    </div>`;
+  }
+
+  // Collect all planned ingredients for the week
+  const plannedIngs=[];
+  Object.values(plan).forEach(r=>{
+    if(r&&r.ingredients)(r.ingredients).forEach(ing=>{
+      const name=typeof ing==='string'?ing:ing.name;
+      if(name)plannedIngs.push(name.toLowerCase());
+    });
+  });
+  const uniqueIngs=[...new Set(plannedIngs)];
+
+  let ingHTML='';
+  if(uniqueIngs.length){
+    ingHTML=`<div class="planner-ingredients"><h4>🛒 Ingredientes da semana</h4>`;
+    uniqueIngs.forEach(ing=>{
+      const has=allItemNames.some(n=>n.includes(ing)||ing.includes(n));
+      ingHTML+=`<div class="ing-row ${has?'available':'missing'}">${has?'✅':'🛒'} ${esc(ing)}</div>`;
+    });
+    ingHTML+=`</div>`;
+  }
+
+  section.innerHTML=`
+    <div class="section-title">📅 Planejador Semanal</div>
+    <div class="planner-grid">${gridHTML}</div>
+    ${ingHTML}`;
+}
+
+function openPlannerDay(dateKey,dayName){
+  document.getElementById('plannerDayTitle').textContent=`📅 ${dayName} — ${dateKey.split('-').reverse().join('/')}`;
+  const plan=getWeeklyPlan();
+  const current=plan[dateKey];
+  let html='';
+
+  if(current){
+    html+=`<div class="meal-recipe"><h4>🍳 ${esc(current.name)}</h4>
+      ${current.steps?`<div class="steps">${esc(current.steps)}</div>`:''}
+      <button class="btn btn-danger" style="margin-top:10px;font-size:13px;padding:8px" onclick="removePlannerDay('${dateKey}')">🗑️ Remover</button>
+    </div><hr style="border-color:var(--bg3);margin:12px 0"><p style="font-size:13px;color:var(--text2);margin-bottom:8px">Ou trocar por:</p>`;
+  }
+
+  // Show available recipes to pick
+  const savedRecipes=window._mealRecipes||[];
+  const staticRecipes=RECIPES.slice(0,8);
+  const allRecipes=[...savedRecipes.map((r,i)=>({...r,src:'ai',idx:i})),...staticRecipes.map((r,i)=>({...r,src:'static',idx:i}))];
+
+  allRecipes.forEach((r,i)=>{
+    html+=`<div class="planner-recipe-pick" onclick="assignRecipeToDay('${dateKey}',${i})">🍳 ${esc(r.name)} ${r.src==='ai'?'<span class="ai-badge">IA</span>':''} <span style="font-size:11px;color:var(--text2)">${esc(r.prepTime||r.time||'')}</span></div>`;
+  });
+  window._plannerRecipes=allRecipes;
+
+  document.getElementById('plannerDayContent').innerHTML=html;
+  openModal('plannerDayModal');
+}
+
+function assignRecipeToDay(dateKey,recipeIdx){
+  const recipes=window._plannerRecipes;
+  if(!recipes||!recipes[recipeIdx])return;
+  const r=recipes[recipeIdx];
+  const plan=getWeeklyPlan();
+  plan[dateKey]={name:r.name,ingredients:r.ingredients||[],steps:r.steps||r.desc||'',prepTime:r.prepTime||r.time||''};
+  saveWeeklyPlan(plan);
+  closeModal('plannerDayModal');
+  renderWeeklyPlanner();
+  toast('📅 '+r.name+' planejado!');
+}
+
+function removePlannerDay(dateKey){
+  const plan=getWeeklyPlan();
+  delete plan[dateKey];
+  saveWeeklyPlan(plan);
+  closeModal('plannerDayModal');
+  renderWeeklyPlanner();
+  toast('🗑️ Receita removida do dia');
+}
+
+function addRecipeToPlanner(recipeIdx){
+  const recipes=window._mealRecipes;
+  if(!recipes||!recipes[recipeIdx]){toast('Receita não disponível');return}
+  const r=recipes[recipeIdx];
+  // Find next empty day this week
+  const plan=getWeeklyPlan();
+  const now=new Date();
+  const dayOfWeek=now.getDay();
+  const monday=new Date(now);monday.setDate(now.getDate()-((dayOfWeek+6)%7));
+  for(let i=0;i<7;i++){
+    const d=new Date(monday);d.setDate(monday.getDate()+i);
+    const key=d.toISOString().split('T')[0];
+    if(!plan[key]&&key>=today()){
+      plan[key]={name:r.name,ingredients:r.ingredients||[],steps:r.steps||'',prepTime:r.prepTime||''};
+      saveWeeklyPlan(plan);
+      renderWeeklyPlanner();
+      toast('📅 '+r.name+' adicionado ao planejador!');
+      return;
+    }
+  }
+  toast('📅 Semana cheia! Remova uma receita primeiro.');
+}
+
+// ===== CHEF MODE =====
+
+function getRecipesCookedThisMonth(){
+  if(!state.stats.recipesCooked)return 0;
+  const monthKey=today().slice(0,7);
+  return state.stats.recipesCooked.filter(r=>r.date.startsWith(monthKey)).length;
+}
+
+function getRecipesCookedThisWeek(){
+  if(!state.stats.recipesCooked)return 0;
+  const now=new Date();
+  const weekAgo=new Date(now);weekAgo.setDate(now.getDate()-7);
+  return state.stats.recipesCooked.filter(r=>new Date(r.date)>=weekAgo).length;
+}
+
+function hadWasteThisWeek(){
+  const now=new Date();
+  const weekAgo=new Date(now);weekAgo.setDate(now.getDate()-7);
+  return state.stats.wasteLog.some(w=>new Date(w.date)>=weekAgo);
+}
+
+function renderChefMode(){
+  const section=document.getElementById('chef-mode-section');
+  const monthCount=getRecipesCookedThisMonth();
+  const weekCount=getRecipesCookedThisWeek();
+  const noWaste=!hadWasteThisWeek();
+  const isChefWeek=weekCount>=5;
+  const isZeroWaste=noWaste&&state.items.filter(i=>i.status==='active'||i.status==='frozen').length>0;
+
+  section.innerHTML=`
+    <div class="chef-card">
+      <h3>👨‍🍳 Modo Chef</h3>
+      <div class="chef-stats">
+        <div class="chef-stat"><div class="stat-val">${monthCount}</div><div class="stat-lbl">Receitas no mês</div></div>
+        <div class="chef-stat"><div class="stat-val">${weekCount}</div><div class="stat-lbl">Esta semana</div></div>
+        <div class="chef-stat"><div class="stat-val">${state.stats.streak||0}🔥</div><div class="stat-lbl">Sem desperdício</div></div>
+      </div>
+      <div class="chef-badges">
+        <div class="chef-badge ${isChefWeek?'earned':''}">👨‍🍳 Chef da Semana ${isChefWeek?'✅':'(5+ receitas)'}</div>
+        <div class="chef-badge ${isZeroWaste?'earned':''}">♻️ Zero Desperdício ${isZeroWaste?'✅':'(sem vencidos)'}</div>
+      </div>
+    </div>`;
+}
+
+// ===== DAILY SUGGESTION =====
+
+async function renderDailySuggestion(){
+  const section=document.getElementById('daily-suggestion-section');
+  const expiring=state.items.filter(i=>i.status==='active'&&daysUntil(i.expiryDate)>=0&&daysUntil(i.expiryDate)<=2);
+  if(expiring.length===0){section.innerHTML='';return}
+
+  // Check cache
+  const cacheKey='validade_daily_suggestion';
+  const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');
+  const todayStr=today();
+
+  if(cached&&cached.date===todayStr&&cached.suggestion){
+    section.innerHTML=renderSuggestionCard(cached.suggestion,cached.items);
+    return;
+  }
+
+  // Show placeholder while loading
+  const itemNames=expiring.map(i=>i.name);
+  section.innerHTML=`<div class="daily-suggestion"><h3>💡 Analisando seus itens...</h3><p>Verificando o que fazer com ${itemNames.join(', ')}...</p></div>`;
+
+  const prompt=`Estes alimentos vencem em 1-2 dias: ${itemNames.join(', ')}. Sugira UMA dica rápida e criativa de como usar, em 1 frase curta e simpática (estilo "Que tal uma caprese?"). Responda APENAS em JSON: {"tip":"frase curta","emoji":"emoji","recipeName":"nome da receita sugerida"}`;
+
+  try{
+    const result=await callGemini([{text:prompt}],256);
+    const parsed=extractJSON(result);
+    if(parsed&&parsed.tip){
+      localStorage.setItem(cacheKey,JSON.stringify({date:todayStr,suggestion:parsed,items:itemNames}));
+      section.innerHTML=renderSuggestionCard(parsed,itemNames);
+    }else{
+      // Fallback without AI
+      section.innerHTML=`<div class="daily-suggestion"><h3>💡 Dica do dia</h3><p>Seu(s) ${itemNames.join(' e ')} vence(m) em breve. Use hoje!</p></div>`;
+    }
+  }catch(e){
+    section.innerHTML=`<div class="daily-suggestion"><h3>💡 Dica do dia</h3><p>Seu(s) ${itemNames.join(' e ')} vence(m) em breve. Use hoje!</p></div>`;
+  }
+}
+
+function renderSuggestionCard(suggestion,itemNames){
+  return `<div class="daily-suggestion">
+    <h3>${suggestion.emoji||'💡'} Dica do dia</h3>
+    <p>${esc(suggestion.tip)}</p>
+    <div class="suggestion-action">
+      <button onclick="generateMealRecipes()" style="background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff">✨ Ver receitas</button>
+      <button onclick="document.getElementById('daily-suggestion-section').innerHTML=''" style="background:var(--bg3);color:var(--text)">Fechar</button>
+    </div>
+  </div>`;
+}
+
+// ===== INTEGRATE CHEF BADGES WITH BADGE SYSTEM =====
+const CHEF_BADGES=[
+  {id:'chefweek',name:'Chef da Semana',icon:'👨‍🍳',desc:'5+ receitas na semana',check:()=>getRecipesCookedThisWeek()>=5},
+  {id:'zerowaste',name:'Zero Desperdício',icon:'♻️',desc:'Sem vencidos na semana',check:()=>!hadWasteThisWeek()&&state.items.filter(i=>i.status==='active'||i.status==='frozen').length>0},
+  {id:'mealplanner',name:'Planejador',icon:'📅',desc:'Planejou 7 dias',check:()=>Object.keys(getWeeklyPlan()).length>=7},
+];
+// Add chef badges to main BADGES array
+CHEF_BADGES.forEach(b=>{if(!BADGES.find(x=>x.id===b.id))BADGES.push(b)});
+
+// Patch renderHome to include new sections
+const _origRenderHome=renderHome;
+renderHome=function(){
+  _origRenderHome();
+  renderMealPlanning();
+  renderChefMode();
+  renderWeeklyPlanner();
+  renderDailySuggestion();
+};
+
 function init(){
   document.body.classList.toggle('light',!state.settings.darkMode);
   document.getElementById('themeBtn').textContent=state.settings.darkMode?'🌙':'☀️';
