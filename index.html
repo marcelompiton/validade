@@ -345,10 +345,37 @@ canvas{width:100%;height:auto}
 
 .chart-line-container{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px}
 .chart-line-container h3{font-size:14px;margin-bottom:12px}
+
+/* Price History & Market Comparison */
+.sparkline-wrap{display:inline-block;vertical-align:middle;margin-left:4px}
+.sparkline-wrap canvas{vertical-align:middle}
+.price-trend{font-size:10px;font-weight:700;margin-left:3px;vertical-align:middle}
+.price-trend.up{color:var(--red)}
+.price-trend.down{color:var(--green)}
+.price-trend.stable{color:var(--text2)}
+.price-alert{background:linear-gradient(135deg,rgba(253,203,110,.15),rgba(225,112,85,.08));border:1px solid rgba(253,203,110,.2);border-radius:12px;padding:12px;margin-bottom:8px;font-size:13px;display:flex;align-items:center;gap:8px}
+.opportunity-card{background:linear-gradient(135deg,rgba(0,184,148,.12),rgba(108,92,231,.08));border:1px solid rgba(0,184,148,.2);border-radius:var(--radius);padding:14px;margin-bottom:12px;font-size:13px;line-height:1.5}
+.opportunity-card h4{font-size:14px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.market-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.market-table th{text-align:left;padding:8px 6px;border-bottom:2px solid var(--bg3);font-size:11px;color:var(--text2);text-transform:uppercase}
+.market-table td{padding:8px 6px;border-bottom:1px solid var(--bg3)}
+.market-table tr:last-child td{border-bottom:none}
+.market-highlight{background:rgba(0,184,148,.1);border-radius:8px;padding:8px 12px;margin-top:8px;font-size:12px;color:var(--green);display:flex;align-items:center;gap:6px}
+.spending-legend{font-size:11px;color:var(--text2);margin-top:8px}
+.spending-legend div{display:flex;align-items:center;gap:6px;margin:4px 0}
+.spending-legend .swatch{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.report-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;background:var(--bg3);border:none;border-radius:10px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;margin-top:8px;transition:var(--transition)}
+.report-btn:active{transform:scale(.95)}
+.autocomplete-wrap{position:relative}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--bg3);border-radius:0 0 12px 12px;max-height:150px;overflow-y:auto;z-index:10;display:none}
+.autocomplete-list.show{display:block}
+.autocomplete-item{padding:10px 14px;cursor:pointer;font-size:13px;transition:background .2s}
+.autocomplete-item:hover,.autocomplete-item:active{background:var(--bg3)}
 </style>
 </head>
 <body>
 <div id="toast" class="toast"></div>
+<div id="xpToast" class="xp-toast"></div>
 
 <header class="header">
   <div><h1>🥦 Validade</h1><p style="font-size:11px;color:var(--text2);margin-top:2px">Controle a validade dos seus alimentos com inteligência artificial</p></div>
@@ -361,9 +388,12 @@ canvas{width:100%;height:auto}
 <!-- HOME PAGE -->
 <div id="page-home" class="page active">
   <div id="streak-section"></div>
+  <div id="level-section"></div>
+  <div id="challenge-section"></div>
   <div id="nlResult"></div>
   <div id="daily-suggestion-section"></div>
   <div id="alerts-section"></div>
+  <div id="ranking-section"></div>
   <div id="meal-planning-section"></div>
   <div id="chef-mode-section"></div>
   <div id="ai-tip-section"></div>
@@ -393,7 +423,10 @@ canvas{width:100%;height:auto}
 
 <!-- STATS PAGE -->
 <div id="page-stats" class="page">
+  <div id="economyDashboard"></div>
+  <div id="levelCard"></div>
   <div class="stat-grid" id="statGrid"></div>
+  <div class="chart-line-container"><h3>📈 Economia Mensal (últimos 6 meses)</h3><canvas id="lineChart" width="300" height="200"></canvas></div>
   <div class="chart-container"><h3>📊 Consumidos vs Desperdiçados</h3><canvas id="pieChart" width="300" height="200"></canvas></div>
   <div class="chart-container"><h3>💰 Desperdício Mensal (R$)</h3><canvas id="barChart" width="300" height="200"></canvas></div>
   <div class="section-title">🏅 Conquistas</div>
@@ -521,6 +554,16 @@ canvas{width:100%;height:auto}
   <button class="barcode-close" onclick="stopBarcodeScan()">✕ Fechar</button>
 </div>
 
+<!-- PLANNER DAY MODAL -->
+<div class="modal-overlay" id="plannerDayModal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <div class="planner-modal-day" id="plannerDayTitle"></div>
+  <div id="plannerDayContent"></div>
+  <button class="btn btn-secondary" style="margin-top:12px" onclick="closeModal('plannerDayModal')">Fechar</button>
+</div>
+</div>
+
 <!-- FAB -->
 <button class="fab" onclick="openAddModal()">+</button>
 
@@ -560,6 +603,7 @@ canvas{width:100%;height:auto}
   </div>
   <div class="form-group"><label>Data de Validade</label><input class="form-input" id="fExpiry" type="date"></div>
   <div class="form-group"><label>Preço Estimado (R$)</label><input class="form-input" id="fPrice" type="number" step="0.01" placeholder="0.00"></div>
+  <div class="form-group autocomplete-wrap"><label>🏪 Onde comprou (opcional)</label><input class="form-input" id="fStore" placeholder="Ex: Zaffari, Carrefour..." autocomplete="off" oninput="showStoreAutocomplete(this.value)" onfocus="showStoreAutocomplete(this.value)"><div class="autocomplete-list" id="storeAutocomplete"></div></div>
   <div class="form-group"><label>📝 Observações</label><textarea class="form-input" id="fNotes" placeholder="Ex: comprei no Zaffari, marca Elegê, sem lactose..." rows="2" style="resize:none;height:auto"></textarea></div>
   <div id="nutritionSection" class="nutrition-section">
     <h4>🥗 Informação Nutricional <span class="ai-badge">OFF</span></h4>
@@ -796,10 +840,18 @@ const SEASONAL_TIPS = {
 const BADGES = [
   {id:'mestre',name:'Mestre da Despensa',icon:'👑',desc:'30 dias sem desperdício',check:s=>s.streak>=30},
   {id:'chef',name:'Chef Criativo',icon:'👨‍🍳',desc:'Usou 5 sugestões de receita',check:s=>s.recipesUsed>=5},
-  {id:'freezer',name:'Freezer Pro',icon:'❄️',desc:'10+ itens congelados gerenciados',check:s=>s.frozenManaged>=10},
+  {id:'freezer_pro',name:'Freezer Pro',icon:'❄️',desc:'10+ itens congelados gerenciados',check:s=>s.frozenManaged>=10},
   {id:'tracker',name:'Rastreador',icon:'📊',desc:'50+ itens rastreados',check:s=>s.totalTracked>=50},
   {id:'saver',name:'Econômico',icon:'💰',desc:'Economizou R$100+',check:s=>s.moneySaved>=100},
   {id:'starter',name:'Primeiro Passo',icon:'🌟',desc:'Adicionou primeiro item',check:s=>s.totalTracked>=1},
+  {id:'primeira_semana',name:'Primeira Semana',icon:'🌱',desc:'7 dias usando o app',check:s=>{const g=getGamification();return g.daysUsed>=7}},
+  {id:'streak30',name:'Streak 30',icon:'🔥',desc:'30 dias consecutivos',check:s=>s.streak>=30},
+  {id:'centenario',name:'Centenário',icon:'💯',desc:'100 itens controlados',check:s=>s.totalTracked>=100},
+  {id:'mestre_freezer',name:'Mestre do Freezer',icon:'🧊',desc:'20 itens congelados',check:s=>s.frozenManaged>=20},
+  {id:'fotografo',name:'Fotógrafo',icon:'📸',desc:'10 fotos tiradas com IA',check:s=>{const g=getGamification();return g.photosUsed>=10}},
+  {id:'comprador_consciente',name:'Comprador Consciente',icon:'🛒',desc:'0 desperdício por 2 semanas',check:s=>s.streak>=14},
+  {id:'eco_warrior',name:'Eco Warrior',icon:'🌍',desc:'Economizou R$500+ no total',check:s=>s.moneySaved>=500},
+  {id:'cinco_estrelas',name:'5 Estrelas',icon:'⭐',desc:'Streak de 5 dias',check:s=>s.streak>=5},
 ];
 
 // ===== AUTH & PAYWALL =====
@@ -982,6 +1034,7 @@ document.querySelectorAll('.nav-item').forEach(btn=>{
     if(btn.dataset.page==='items')renderItems();
     if(btn.dataset.page==='stats')renderStats();
     if(btn.dataset.page==='config')renderConfig();
+    if(btn.dataset.page==='compras')renderShoppingList();
     if(btn.dataset.page==='home')renderHome();
   });
 });
@@ -1273,6 +1326,7 @@ function renderHome(){
   const weekWaste=thisWeek.reduce((s,w)=>s+w.price,0);
   document.getElementById('waste-summary').innerHTML=weekWaste>0?`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><span style="font-size:12px;color:var(--text2)">Desperdício esta semana</span><div style="font-size:24px;font-weight:900;color:var(--red)">R$ ${weekWaste.toFixed(2)}</div></div><div style="font-size:11px;color:var(--text2)">≈ ${Math.floor(weekWaste/15)} refeições</div></div></div>`:'';
 
+  renderShoppingCardHome();
   document.getElementById('home-empty').style.display=items.length===0?'block':'none';
   if(items.length===0){document.getElementById('streak-section').innerHTML='';document.getElementById('waste-summary').innerHTML=''}
 }
@@ -1555,6 +1609,7 @@ function consumeItem(id){
   const item=state.items.find(i=>i.id===id);if(!item)return;
   item.status='consumed';
   state.stats.moneySaved+=item.price||0;
+  trackConsumption(item);
   save();renderItems();renderHome();
   toast('✅ '+item.name+' consumido!');
 }
@@ -1901,6 +1956,9 @@ function checkAndNotify(){
     const soon=activeItems.filter(i=>i.expiryDate===in3str);
     soon.forEach(i=>showLocalNotif('🟡 Vence em 3 dias','Seu '+i.name+' vence em 3 dias.'+getRecipeHint(i.name),'3day-'+i.id));
   }
+  // Shopping list reminder
+  const shopPending=getShoppingList().filter(x=>!x.bought);
+  if(shopPending.length){showLocalNotif('🛒 Lista de Compras','Sua lista tem '+shopPending.length+' itens pendentes','shop')}
   localStorage.setItem('validade_lastNotif',today);
 }
 
@@ -2178,6 +2236,188 @@ if('serviceWorker' in navigator){
 
 // ===== NOTIFICATIONS CHECK =====
 function checkNotifications(){checkAndNotify()}
+
+// ===== SHOPPING LIST =====
+function getShoppingList(){return JSON.parse(localStorage.getItem('validade_shopping')||'[]')}
+function saveShoppingList(list){localStorage.setItem('validade_shopping',JSON.stringify(list))}
+function getConsumptionHistory(){return JSON.parse(localStorage.getItem('validade_consumption')||'[]')}
+function saveConsumptionHistory(h){localStorage.setItem('validade_consumption',JSON.stringify(h))}
+
+// Track consumption when item is consumed
+function trackConsumption(item){
+  const h=getConsumptionHistory();
+  h.push({name:item.name,category:item.category,unit:item.unit,quantity:item.quantity,date:today(),price:item.price||0});
+  saveConsumptionHistory(h);
+}
+
+// Calculate purchase frequency for a product
+function getPurchasePattern(productName){
+  const h=getConsumptionHistory();
+  const matches=h.filter(x=>x.name.toLowerCase()===productName.toLowerCase()).sort((a,b)=>a.date.localeCompare(b.date));
+  if(matches.length<2)return null;
+  const diffs=[];
+  for(let i=1;i<matches.length;i++){
+    const d1=new Date(matches[i-1].date),d2=new Date(matches[i].date);
+    diffs.push(Math.round((d2-d1)/864e5));
+  }
+  const avg=Math.round(diffs.reduce((s,d)=>s+d,0)/diffs.length);
+  const lastDate=matches[matches.length-1].date;
+  const daysSinceLast=Math.round((new Date()-new Date(lastDate))/864e5);
+  return{avgDays:avg,lastDate,daysSinceLast,count:matches.length};
+}
+
+// Generate smart shopping suggestions
+function generateSmartList(){
+  const list=getShoppingList();
+  const existingNames=new Set(list.map(x=>x.name.toLowerCase()));
+  let added=0;
+
+  // 1. Items with low stock (qty ≤ 1)
+  state.items.filter(i=>(i.status==='active'||i.status==='frozen')&&i.quantity<=1).forEach(i=>{
+    if(!existingNames.has(i.name.toLowerCase())){
+      list.push({id:uuid(),name:i.name,category:i.category,unit:i.unit,reason:'estoque baixo',bought:false,auto:true});
+      existingNames.add(i.name.toLowerCase());added++;
+    }
+  });
+
+  // 2. Expired items (need replacement)
+  state.items.filter(i=>i.status==='active'&&daysUntil(i.expiryDate)<0).forEach(i=>{
+    if(!existingNames.has(i.name.toLowerCase())){
+      list.push({id:uuid(),name:i.name,category:i.category,unit:i.unit,reason:'venceu — repor',bought:false,auto:true});
+      existingNames.add(i.name.toLowerCase());added++;
+    }
+  });
+
+  // 3. Consumption patterns — items due for repurchase
+  const h=getConsumptionHistory();
+  const productNames=[...new Set(h.map(x=>x.name))];
+  productNames.forEach(name=>{
+    if(existingNames.has(name.toLowerCase()))return;
+    // Skip if already in pantry
+    if(state.items.some(i=>(i.status==='active'||i.status==='frozen')&&i.name.toLowerCase()===name.toLowerCase()))return;
+    const pattern=getPurchasePattern(name);
+    if(pattern&&pattern.count>=2&&pattern.daysSinceLast>=pattern.avgDays*0.8){
+      const entry=h.find(x=>x.name===name);
+      list.push({id:uuid(),name,category:entry?.category||'outros',unit:entry?.unit||'un',reason:`compra a cada ~${pattern.avgDays}d`,bought:false,auto:true});
+      existingNames.add(name.toLowerCase());added++;
+    }
+  });
+
+  saveShoppingList(list);
+  renderShoppingList();
+  toast(added?`✨ ${added} item(ns) sugerido(s)!`:'✅ Lista já está atualizada');
+}
+
+function addManualShopItem(){
+  const input=document.getElementById('shopManualInput');
+  const name=input.value.trim();
+  if(!name){toast('❌ Digite o nome do item');return}
+  const list=getShoppingList();
+  list.push({id:uuid(),name,category:'outros',unit:'un',reason:'manual',bought:false,auto:false});
+  saveShoppingList(list);
+  input.value='';
+  renderShoppingList();
+  toast('✅ '+name+' adicionado à lista');
+}
+
+// Enter to add
+document.getElementById('shopManualInput')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addManualShopItem()}});
+
+function toggleShopBought(id){
+  const list=getShoppingList();
+  const item=list.find(x=>x.id===id);
+  if(!item)return;
+  item.bought=!item.bought;
+  saveShoppingList(list);
+  renderShoppingList();
+  if(item.bought){
+    // Ask if they want to add to pantry
+    if(confirm(`Adicionar "${item.name}" à despensa com data de validade?`)){
+      openAddModal();
+      document.getElementById('fName').value=item.name;
+      const cat=CATEGORIES.find(c=>c.id===item.category);
+      if(cat)document.getElementById('fCategory').value=cat.id;
+    }
+  }
+}
+
+function removeShopItem(id){
+  let list=getShoppingList();
+  list=list.filter(x=>x.id!==id);
+  saveShoppingList(list);
+  renderShoppingList();
+}
+
+function clearBoughtItems(){
+  let list=getShoppingList();
+  const before=list.length;
+  list=list.filter(x=>!x.bought);
+  saveShoppingList(list);
+  renderShoppingList();
+  toast(`🗑️ ${before-list.length} item(ns) removido(s)`);
+}
+
+function shareShoppingListWA(){
+  const list=getShoppingList().filter(x=>!x.bought);
+  if(!list.length){toast('Lista vazia!');return}
+  let text='🛒 *Lista de Compras*\n\n';
+  list.forEach(i=>{text+=`☐ ${i.name}${i.unit&&i.unit!=='un'?' ('+i.unit+')':''}\n`});
+  text+=`\n📊 Total: ${list.length} itens`;
+  window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
+}
+
+function renderShoppingList(){
+  const list=getShoppingList();
+  const container=document.getElementById('shop-list');
+  const emptyEl=document.getElementById('shop-empty');
+  const sugSection=document.getElementById('shop-suggestions-section');
+
+  // Show purchase pattern suggestions
+  const h=getConsumptionHistory();
+  const patterns=[];
+  const productNames=[...new Set(h.map(x=>x.name))];
+  productNames.forEach(name=>{
+    const p=getPurchasePattern(name);
+    if(p&&p.count>=2&&p.daysSinceLast>=p.avgDays*0.8){
+      // Not already in pantry
+      if(!state.items.some(i=>(i.status==='active'||i.status==='frozen')&&i.name.toLowerCase()===name.toLowerCase())){
+        patterns.push({name,pattern:p});
+      }
+    }
+  });
+  if(patterns.length){
+    sugSection.innerHTML='<div class="section-title">🔮 Sugestões Inteligentes</div>'+
+      patterns.map(p=>`<div class="tip-card" style="font-size:13px"><span class="tip-icon">🔄</span>Você compra <strong>${esc(p.name)}</strong> a cada ~${p.pattern.avgDays} dias. ${p.pattern.daysSinceLast>=p.pattern.avgDays?'<strong>Hora de comprar!</strong>':'Faltam ~'+(p.pattern.avgDays-p.pattern.daysSinceLast)+' dias.'}</div>`).join('');
+  }else{sugSection.innerHTML=''}
+
+  if(!list.length){container.innerHTML='';emptyEl.style.display='block';return}
+  emptyEl.style.display='none';
+
+  const pending=list.filter(x=>!x.bought);
+  const bought=list.filter(x=>x.bought);
+
+  let html='';
+  if(pending.length){
+    html+='<div class="section-title">📋 Pendentes ('+pending.length+')</div>';
+    pending.forEach(item=>{
+      html+=`<div class="shop-item"><button class="shop-check" onclick="event.stopPropagation();toggleShopBought('${item.id}')"></button><div class="shop-info"><h4>${getCatEmoji(item.category)} ${esc(item.name)}</h4>${item.reason?`<p class="shop-suggestion">💡 ${esc(item.reason)}</p>`:''}</div><button class="shop-remove" onclick="event.stopPropagation();removeShopItem('${item.id}')">×</button></div>`;
+    });
+  }
+  if(bought.length){
+    html+='<div class="section-title">✅ Comprados ('+bought.length+')</div>';
+    bought.forEach(item=>{
+      html+=`<div class="shop-item bought"><button class="shop-check checked" onclick="event.stopPropagation();toggleShopBought('${item.id}')">✓</button><div class="shop-info"><h4>${getCatEmoji(item.category)} ${esc(item.name)}</h4></div><button class="shop-remove" onclick="event.stopPropagation();removeShopItem('${item.id}')">×</button></div>`;
+    });
+  }
+  container.innerHTML=html;
+}
+
+function renderShoppingCardHome(){
+  const list=getShoppingList().filter(x=>!x.bought);
+  const el=document.getElementById('shopping-card-home');
+  if(!list.length){el.innerHTML='';return}
+  el.innerHTML=`<div class="card" onclick="document.querySelector('[data-page=compras]').click()" style="cursor:pointer;background:linear-gradient(135deg,rgba(108,92,231,.12),rgba(168,85,247,.08));border:1px solid rgba(108,92,231,.15)"><div style="display:flex;align-items:center;gap:12px"><span style="font-size:28px">🛒</span><div><h4 style="font-size:15px">${list.length} item(ns) na lista de compras</h4><p style="font-size:12px;color:var(--text2)">Toque para ver a lista</p></div></div></div>`;
+}
 
 // ===== INIT =====
 function checkUrlImport(){
